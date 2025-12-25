@@ -1,4 +1,4 @@
-import { GameProvider, useGame, GAME_STATES } from './context/GameContext';
+import { GameProvider, useGame, GAME_STATUS } from './context/GameContext';
 import { GameCanvas } from './components/game/GameCanvas';
 import { Menu } from './components/ui/Menu';
 import { GameOver } from './components/ui/GameOver';
@@ -9,16 +9,16 @@ function GameContent() {
 
   return (
     <div className="w-full min-h-screen bg-stone-900 flex items-center justify-center">
-      {state.gameState === GAME_STATES.MENU && <Menu />}
+      {state.gameStatus === GAME_STATUS.MENU && <Menu />}
 
-      {state.gameState === GAME_STATES.PLAYING && (
+      {state.gameStatus === GAME_STATUS.PLAYING && (
         <div className="relative">
           <HUD />
           <GameCanvas />
         </div>
       )}
 
-      {state.gameState === GAME_STATES.GAME_OVER && <GameOver />}
+      {state.gameStatus === GAME_STATUS.GAME_OVER && <GameOver />}
     </div>
   );
 }

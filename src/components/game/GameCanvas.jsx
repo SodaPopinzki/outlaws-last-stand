@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useGame, GAME_STATES } from '../../context/GameContext';
+import { useGame, GAME_STATUS } from '../../context/GameContext';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { useInput } from '../../hooks/useInput';
 import { renderPlayer, updatePlayer, damagePlayer } from '../entities/Player';
@@ -26,17 +26,17 @@ export function GameCanvas() {
 
   // Initialize game on mount
   useEffect(() => {
-    if (state.gameState === GAME_STATES.PLAYING && state.enemies.length === 0) {
+    if (state.gameStatus === GAME_STATUS.PLAYING && state.enemies.length === 0) {
       // Spawn initial wave
       const enemyCount = getEnemyCountForWave(state.wave);
       const enemies = spawnWave(state.wave, enemyCount, CANVAS_WIDTH, CANVAS_HEIGHT);
       updateEnemies(enemies);
     }
-  }, [state.gameState, state.enemies.length, state.wave, updateEnemies]);
+  }, [state.gameStatus, state.enemies.length, state.wave, updateEnemies]);
 
   // Game update loop
   const update = (deltaTime) => {
-    if (state.gameState !== GAME_STATES.PLAYING) return;
+    if (state.gameStatus !== GAME_STATUS.PLAYING) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -139,7 +139,7 @@ export function GameCanvas() {
     updateProjectiles(activeProjectiles);
 
     // Spawn new wave if all enemies defeated
-    if (aliveEnemies.length === 0 && state.gameState === GAME_STATES.PLAYING) {
+    if (aliveEnemies.length === 0 && state.gameStatus === GAME_STATUS.PLAYING) {
       const nextWave = state.wave + 1;
       const enemyCount = getEnemyCountForWave(nextWave);
       const newEnemies = spawnWave(nextWave, enemyCount, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -161,7 +161,7 @@ export function GameCanvas() {
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Render game entities
-    if (state.gameState === GAME_STATES.PLAYING) {
+    if (state.gameStatus === GAME_STATUS.PLAYING) {
       // Render projectiles
       state.projectiles.forEach((projectile) => {
         renderProjectile(ctx, projectile);
@@ -178,7 +178,7 @@ export function GameCanvas() {
   }, [state]);
 
   // Start game loop
-  useGameLoop(update, state.gameState === GAME_STATES.PLAYING);
+  useGameLoop(update, state.gameStatus === GAME_STATUS.PLAYING);
 
   return (
     <canvas
