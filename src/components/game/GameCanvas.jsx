@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useGame, GAME_STATUS } from '../../context/GameContext';
-import { useGameLoop } from '../../hooks/useGameLoop';
+import { useSimpleGameLoop } from '../../hooks/useGameLoop';
 import { useInput } from '../../hooks/useInput';
 import { renderPlayer, updatePlayer, damagePlayer } from '../entities/Player';
 import { renderEnemy, updateEnemy, damageEnemy, isEnemyDead } from '../entities/Enemy';
@@ -178,7 +178,7 @@ export function GameCanvas() {
   }, [state]);
 
   // Start game loop
-  useGameLoop(update, state.gameStatus === GAME_STATUS.PLAYING);
+  useSimpleGameLoop(update, state.gameStatus === GAME_STATUS.PLAYING);
 
   return (
     <canvas
