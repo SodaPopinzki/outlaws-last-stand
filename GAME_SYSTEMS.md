@@ -11,7 +11,7 @@ Complete overview of all implemented game systems and features.
 Comprehensive React Context-based state management:
 
 ```javascript
-gameStatus: 'menu' | 'playing' | 'paused' | 'levelUp' | 'gameOver' | 'victory'
+gameStatus: 'menu' | 'characterSelect' | 'playing' | 'paused' | 'levelUp' | 'gameOver' | 'victory'
 
 player: {
   x, y, hp, maxHp, speed, xp, level,
@@ -19,7 +19,8 @@ player: {
   stats: { damage, fireRate, moveSpeed, maxHp, projectileSpeed,
            projectileSize, critChance, critDamage, pickupRange,
            armor, regen },
-  invulnerable, invulnerableTime
+  invulnerable, invulnerableTime,
+  passiveManager  // Manages character passive abilities
 }
 
 enemies[], projectiles[], xpGems[], particles[]
@@ -175,6 +176,38 @@ Ties all systems together:
 
 ---
 
+### 9. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+
+Manages character passive abilities and their effects on gameplay:
+
+**PassiveManager Class**:
+- **Damage Modifiers**: getDamageModifier(), getDamageReductionModifier(), getPoisonDamageModifier()
+- **Movement Modifiers**: getSpeedModifier()
+- **Weapon Modifiers**: getFireRateModifier(), getCooldownModifier()
+- **Pickup Modifiers**: getPickupRangeModifier()
+- **XP Modifiers**: getXpModifier(), getMaxHpModifier()
+
+**Event Handlers**:
+- `onEnemyKilled()`: Spawns gold nuggets for Prospector
+- `onDamageDealt()`: Returns healing for Shaman's life steal
+- `onXpCollected()`: Applies XP modifiers
+
+**Integration Points**:
+- Character selection: Creates PassiveManager, applies stat modifiers
+- Movement: Speed modifiers (Ride Hard +20%)
+- Damage dealt: Damage modifiers (Lone Wolf +10%, Noose Tightens +25%)
+- Damage taken: Damage reduction (Law & Order -15%)
+- XP collection: XP modifiers (Wanted Dead +20%)
+- Pickup range: Range modifiers (Gold Rush +50%)
+- Enemy kills: Gold spawns (Gold Rush 10% chance)
+- Life steal: Healing on damage (Spirit Walk 5%)
+
+**Statistics Tracking**:
+- goldCollected, lifeStolenTotal, poisonDamageDealt
+- bonusDamageDealt, damageReduced
+
+---
+
 ## 📊 Progress & Unlocks
 
 **Tracked Stats**:
@@ -276,6 +309,8 @@ src/
 │       ├── Enemy.js                # Enemy AI
 │       └── Projectile.js           # Projectile physics
 ├── systems/
+│   ├── PassiveSystem.js            # Passive ability manager
+│   ├── PassiveSystem.example.js    # Integration examples
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -325,6 +360,8 @@ src/
 ✅ 8 Unique playable characters
 ✅ 16 Different weapons with unique mechanics
 ✅ Character unlock system with 7 conditions
+✅ **Passive ability system** - All 8 passives fully integrated
+✅ Western-themed character selection screen
 ✅ Comprehensive state management
 ✅ 60 FPS game loop with delta time
 ✅ Enemy spawning and wave system
