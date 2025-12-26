@@ -334,7 +334,112 @@ The Man with No Name (Wave 50) has 3 unique abilities:
 
 ---
 
-### 8. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 8. **Boss AI System** (`src/systems/BossAI.js`)
+
+**Sophisticated boss behavior and attack execution system**:
+
+**BossController Class**:
+Core boss AI controller managing all boss behaviors:
+
+```javascript
+const controller = new BossController(boss, bossEntity, player, gameDispatch);
+controller.update(dt);
+```
+
+**Movement States** (6 types):
+- **IDLE**: No movement
+- **APPROACH**: Move toward player (distance > 150px)
+- **RETREAT**: Move away from player (distance < 300px)
+- **CIRCLE**: Circle around player at 200px radius
+- **CHARGE**: Linear charge attack movement
+- **STATIONARY**: Fixed position (during certain attacks)
+
+**Attack Execution System**:
+3-phase attack cycle:
+1. **Telegraph** (0.2s - 1.0s): Visual warning before attack
+2. **Execute**: Fire projectiles/activate attack
+3. **Cooldown**: Attack-specific cooldown period
+
+**Attack Pattern Implementation** (14 patterns):
+- **Quick Draw**: Instant shot at player (0.2s telegraph)
+- **Bullet Spray**: Spread of bullets with configurable angle
+- **Dynamite Split**: Explosive splits into 4 mini-bombs
+- **Fire Charge**: Boss charges, leaving burning ground (1.0s telegraph)
+- **Tomahawk Orbit**: Returning tomahawks that can split
+- **Poison Cloud**: Ground AoE with DoT and optional slow (0.5s telegraph)
+- **Tracking Shots**: Homing bullets that track player
+- **Orbit Stars**: Stars orbit boss, then launch at player
+- **Stampede**: Multi-directional charge waves (1.0s telegraph)
+- **Circle Shot**: 360° burst of projectiles
+- **Spiral Shot**: 3-wave rotating spiral pattern
+- **Summon Minions**: Spawns regular enemies around boss
+- **Time Slow**: Slows player to 30% speed (screen flash)
+- **Clone Attack**: Spawns shadow clones that copy attacks
+
+**Telegraph System** (4 types):
+- **NONE**: No warning (instant attacks)
+- **GROUND_MARKER**: Circular indicator on ground (poison cloud)
+- **WARNING_LINE**: Line indicator (charges, stampede)
+- **SCREEN_FLASH**: Screen border flash (time slow, screen-wide)
+
+**Phase Transition System**:
+Automatic phase detection and transition:
+- Detects HP threshold crossing (100% → 50% → 25%)
+- 1.5s transition animation with boss invulnerability
+- Displays phase dialogue
+- Applies stat multipliers (speed, cooldown, damage)
+- Modifies attack behaviors (360°, splits, launches)
+
+**Phase Modifiers Applied**:
+```javascript
+speedMultiplier: 1.5          // +50% movement speed
+cooldownMultiplier: 0.7       // -30% attack cooldowns
+projectileCountMultiplier: 1.5 // +50% projectile count
+trackingStrengthMultiplier: 1.3 // +30% tracking
+fireTrailRadiusMultiplier: 1.5 // +50% fire radius
+// ... and more
+```
+
+**Movement AI**:
+- **Smart positioning**: Maintains optimal distance from player
+- **Pattern switching**: Changes movement every 5 seconds
+- **Circle strafing**: Orbits player at 200px radius, π/2 rad/sec
+- **Tactical retreat**: Backs away when too close (<300px)
+- **Attack-specific movement**: Stationary during certain attacks
+
+**Minion Spawning**:
+Phase 2 mechanic for some bosses:
+- Cooldown-based spawning (10s default)
+- Spawns around boss in circular pattern
+- Count and type configurable per boss
+- Only active when phase enables it
+
+**Helper Functions**:
+- `createBossController(boss, player, dispatch)` - Initialize boss AI
+- `getTelegraphs()` - Get active warning indicators for rendering
+- `onDeath()` - Handle boss defeat (dialogue, rewards, tracking)
+
+**Integration with Game State**:
+Dispatches actions for:
+- Projectile creation (`ADD_PROJECTILE`)
+- Ground effects (`ADD_GROUND_EFFECT`)
+- Boss clones (`ADD_BOSS_CLONE`)
+- Dialogue display (`SHOW_BOSS_DIALOGUE`)
+- Screen effects (`ADD_SCREEN_EFFECT`)
+- Minion spawning (`SPAWN_MINION`)
+- Death rewards (`ADD_XP`, `DROP_SPECIAL_ITEM`)
+- Achievement tracking (`BOSS_DEFEATED`)
+
+**Performance Features**:
+- Cooldown tracking per attack
+- Efficient movement calculations
+- Attack pattern rotation (no repeats)
+- Telegraph cleanup (expired warnings removed)
+- Smart attack selection (only available attacks)
+
+---
+
+### 9. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -387,7 +492,7 @@ Ties all systems together:
 
 ---
 
-### 9. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 10. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -526,6 +631,7 @@ src/
 │   ├── WeaponEvolution.example.js  # Evolution integration examples
 │   ├── WeaponRenderer.js           # Weapon visual effects renderer
 │   ├── WeaponRenderer.example.js   # Renderer integration examples
+│   ├── BossAI.js                   # Boss behavior and attack patterns
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -581,6 +687,7 @@ src/
 ✅ **Passive ability system** - All 8 passives fully integrated
 ✅ **Weapon evolution system** - 7 evolved weapons with special abilities
 ✅ **Boss phase system** - Multi-phase encounters with dialogue
+✅ **Boss AI system** - Sophisticated attack patterns, movement, and telegraphing
 ✅ **Weapon renderer system** - Complete visual effects for all weapon types
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
@@ -600,10 +707,11 @@ src/
 ## 📝 Next Steps
 
 The foundation is complete! Ready to integrate:
-- Boss AI and spawning logic
+- Boss spawning logic integration (BossAI ready to use)
 - Enemy behaviors implementation (lunge, ranged, charge, phase, spawn)
 - Weapon evolution UI (level-up screen)
 - Boss dialogue and phase transition UI
+- Boss telegraph rendering (ground markers, warning lines, screen flash)
 - Weapon visual effects integration (WeaponRenderer in GameCanvas)
 - Sound effects and music
 - Level-up/upgrade selection screen
