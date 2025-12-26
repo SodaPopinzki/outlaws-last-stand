@@ -741,7 +741,196 @@ Each upgrade type applies differently:
 
 ---
 
-### 11. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 11. **Meta Progression System** (`src/systems/MetaProgression.js`)
+
+**Persistent upgrades and achievements between runs**:
+
+**MetaProgression Class**:
+Manages currencies, permanent upgrades, and achievement tracking:
+
+```javascript
+const metaProgression = new MetaProgression();
+metaProgression.addCurrency(CURRENCIES.GOLD_NUGGETS, 50);
+metaProgression.purchaseUpgrade('max_hp');
+metaProgression.updateRunStats(runStats);
+```
+
+**2 Currencies**:
+
+**Gold Nuggets** 💰:
+- Dropped by enemies (common)
+- More from elite enemies and bosses
+- Used for permanent stat upgrades
+- Persistent across runs
+
+**Bounty Stars** ⭐:
+- Earned from achievements/milestones
+- Used for character unlocks
+- Rare and valuable
+
+**8 Permanent Stat Upgrades** (Gold Nuggets):
+
+| Upgrade | Name | Effect | Max Level | Base Cost | Scaling |
+|---------|------|--------|-----------|-----------|---------|
+| **Max HP** | Fortitude ❤️ | +10 Starting HP | 10 | 100g | 1.5× |
+| **Damage** | Gunpowder Mastery 💥 | +5% Starting DMG | 10 | 150g | 1.5× |
+| **Speed** | Swift Boots 👢 | +5% Starting Speed | 10 | 120g | 1.5× |
+| **Pickup** | Gold Magnet 🧲 | +10% Pickup Radius | 10 | 100g | 1.5× |
+| **Luck** | Lucky Horseshoe 🍀 | +10% Starting Luck | 10 | 200g | 1.5× |
+| **Starting Level** | Head Start ⭐ | Start at Lv 2/3/4 | 3 | 500g | 2.0× |
+| **Reroll** | Second Chance 🔄 | +1 Upgrade Reroll | 3 | 300g | 1.8× |
+| **Revival** | Phoenix Feather 🪶 | +1 Revive (50% HP) | 2 | 1000g | 2.0× |
+
+**Cost Scaling Formula**:
+```javascript
+cost = baseCost × (costScaling ^ currentLevel)
+// Example: Max HP Level 3 = 100 × (1.5 ^ 2) = 225g
+```
+
+**Maximum Stat Bonuses**:
+- Max HP: +100 HP (10 × 10)
+- Damage: +50% (10 × 5%)
+- Speed: +50% (10 × 5%)
+- Pickup Radius: +100% (10 × 10%)
+- Luck: +100% (10 × 10%)
+- Starting Level: Level 4 (3 upgrades)
+- Rerolls: 3 rerolls per level-up
+- Revives: 2 revives per run
+
+**Weapon Unlocks**:
+- Unlock any weapon to start with it
+- First find weapon in a run
+- Permanently unlocked for all future runs
+- Start with any unlocked weapon
+
+**Character Unlocks** (Bounty Stars):
+- Characters cost stars to unlock
+- Displayed in character select
+- Star cost varies by character
+- Permanent unlock
+
+**Achievement System** (50+ Achievements):
+
+**Kill Milestones** (5 achievements):
+- 100 kills: Deputy ⭐ (+1 star)
+- 500 kills: Marshal ⭐⭐ (+2 stars)
+- 1,000 kills: Sheriff ⭐⭐⭐ (+3 stars)
+- 5,000 kills: Legend ⭐⭐⭐⭐ (+5 stars)
+- 10,000 kills: Immortal ⭐⭐⭐⭐⭐ (+10 stars)
+
+**Wave Milestones** (5 achievements):
+- Wave 10: Survivor 🌊 (+1 star)
+- Wave 20: Veteran 🌊🌊 (+2 stars)
+- Wave 30: Elite Survivor 🌊🌊🌊 (+3 stars)
+- Wave 40: Unstoppable 🌊🌊🌊🌊 (+5 stars)
+- Wave 50: Frontier Legend 🌊🌊🌊🌊🌊 (+10 stars)
+
+**Time Milestones** (5 achievements):
+- 5 minutes: Quick Shooter ⏱️ (+1 star)
+- 10 minutes: Endurance ⏱️⏱️ (+2 stars)
+- 15 minutes: Iron Will ⏱️⏱️⏱️ (+3 stars)
+- 20 minutes: Marathon Runner ⏱️⏱️⏱️⏱️ (+5 stars)
+- 30 minutes: Untouchable ⏱️⏱️⏱️⏱️⏱️ (+10 stars)
+
+**Boss Achievements** (10 achievements, 1-10 stars each):
+- Billy the Kid: Fast Draw 🤠 (+1 star)
+- Jesse James: Outlaw Hunter 💣 (+1 star)
+- Butch Cassidy: Wild Bunch 🐎 (+2 stars)
+- Sundance Kid: Dual Wield Master ☀️ (+2 stars)
+- Calamity Jane: Calamity's End 🪓 (+3 stars)
+- Doc Holliday: Deadly Dentist ☠️ (+3 stars)
+- Wild Bill Hickok: Pistoleer Prince 🎯 (+4 stars)
+- Wyatt Earp: Lawman Legend ⭐ (+4 stars)
+- Buffalo Bill: Wild West Showdown 🦬 (+5 stars)
+- The Man with No Name: The New Legend 🎩 (+10 stars)
+
+**Evolution Achievements** (7 achievements, 2 stars each):
+- Peacemaker, Hellfire, Death Spin, Curse of the West
+- Lead Storm, Whirlwind, Boomstick
+
+**Perfect Wave Achievements** (3 achievements):
+- 1 perfect wave: Untouched 💚 (+1 star)
+- 5 perfect waves: Dodge Master 💚💚 (+3 stars)
+- 10 perfect waves: Ghost 💚💚💚 (+5 stars)
+
+**Stat Tracking**:
+```javascript
+{
+  totalKills: 0,
+  totalGold: 0,
+  totalStars: 0,
+  maxWave: 0,
+  maxTime: 0,
+  totalRuns: 0,
+  bossesDefeated: [],
+  evolutionsDiscovered: [],
+  perfectWaves: 0
+}
+```
+
+**Run Stats Update**:
+After each run ends:
+```javascript
+metaProgression.updateRunStats({
+  kills: 234,
+  wave: 15,
+  time: 720,           // 12 minutes
+  bossesDefeated: ['billy_the_kid', 'jesse_james'],
+  evolutionsDiscovered: ['peacemaker'],
+  perfectWaves: 2,
+  goldEarned: 150
+});
+```
+
+**Achievement Checking**:
+Automatic after run stats update:
+- Checks all achievements for unlocks
+- Grants Bounty Stars rewards
+- Tracks unlock timestamp
+
+**Helper Functions**:
+- `addCurrency(type, amount)` - Add gold/stars
+- `getCurrency(type)` - Get current amount
+- `spendCurrency(type, amount)` - Spend if available
+- `getUpgradeLevel(statId)` - Get current upgrade level
+- `getUpgradeCost(statId)` - Calculate next upgrade cost
+- `purchaseUpgrade(statId)` - Buy permanent upgrade
+- `getPermanentStatBonuses()` - Get all bonuses for new run
+- `unlockWeapon(weaponId)` - Unlock weapon for start
+- `isWeaponUnlocked(weaponId)` - Check unlock status
+- `unlockCharacter(characterId, cost)` - Unlock character
+- `isCharacterUnlocked(characterId)` - Check unlock
+- `checkAchievement(id, value)` - Check single achievement
+- `checkAllAchievements()` - Check all achievements
+- `getAchievementProgress(id)` - Get progress (current/required)
+- `getAllAchievements()` - Get all with progress
+- `getAchievementsByCategory(category)` - Filter by category
+- `getAchievementCompletion()` - Total completion %
+
+**Data Persistence**:
+All data stored in localStorage:
+- Key: `outlaws_meta_progression`
+- Auto-saves on any change
+- Loads on game start
+- Export/import support
+
+**Export/Import**:
+```javascript
+const data = metaProgression.exportData();  // JSON string
+metaProgression.importData(data);           // Restore from JSON
+```
+
+**Balancing Features**:
+- Exponential cost scaling prevents easy maxing
+- Achievement rewards encourage varied playstyles
+- Perfect wave achievements reward skill
+- Boss achievements encourage progression
+- Evolution discoveries reward experimentation
+- Multiple currencies create different progression paths
+
+---
+
+### 12. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -794,7 +983,7 @@ Ties all systems together:
 
 ---
 
-### 12. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 13. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -936,6 +1125,7 @@ src/
 │   ├── BossAI.js                   # Boss behavior and attack patterns
 │   ├── WaveDirector.js             # Wave spawning and pacing
 │   ├── LevelUpSystem.js            # Upgrade generation and stat bonuses
+│   ├── MetaProgression.js          # Persistent progression and achievements
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -994,6 +1184,7 @@ src/
 ✅ **Boss AI system** - Sophisticated attack patterns, movement, and telegraphing
 ✅ **Wave Director system** - Intelligent spawning, 5 wave types, dynamic difficulty
 ✅ **Level Up system** - 4 upgrade types, 12 stat bonuses, priority-based selection
+✅ **Meta Progression system** - Persistent upgrades, 2 currencies, 50+ achievements
 ✅ **Weapon renderer system** - Complete visual effects for all weapon types
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
@@ -1016,11 +1207,14 @@ The foundation is complete! Ready to integrate:
 - Enemy behaviors implementation (lunge, ranged, charge, phase, spawn)
 - Boss spawning integration with WaveDirector
 - Level-up UI screen (4 upgrade cards with rarity styling)
+- Meta progression UI (upgrade shop, achievement tracker, stats)
 - Boss dialogue and phase transition UI
 - Boss telegraph rendering (ground markers, warning lines, screen flash)
 - Wave announcement UI display
 - Weapon visual effects integration (WeaponRenderer in GameCanvas)
 - Stat upgrade application in game state
+- Gold nugget drops from enemies
+- Achievement unlock notifications
 - Sound effects and music
 - Camera shake implementation
 - Mobile controls
