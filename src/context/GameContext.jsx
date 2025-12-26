@@ -48,6 +48,7 @@ const createInitialState = () => ({
     },
     invulnerable: false,
     invulnerableTime: 0,
+    passiveManager: null, // Initialized when character is selected
   },
 
   enemies: [],

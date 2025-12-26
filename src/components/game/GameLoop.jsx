@@ -23,6 +23,7 @@ import { getEnemyCountForWave } from '../../data/enemies';
 import { angle, distance } from '../../utils/math';
 import { generateId } from '../../utils/random';
 import { updateCharacterProgress } from '../../data/characters';
+import { calculateDamage, calculateIncomingDamage } from '../../systems/PassiveSystem';
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -61,7 +62,11 @@ export function GameLoop({ canvasRef }) {
       const movement = input.getMovementVector();
       if (movement.x !== 0 || movement.y !== 0) {
         const player = state.player;
-        const moveSpeed = player.speed * player.stats.moveSpeed;
+
+        // Apply speed modifier from passive
+        const passiveSpeedMod = player.passiveManager?.getSpeedModifier() || 1.0;
+        const moveSpeed = player.speed * player.stats.moveSpeed * passiveSpeedMod;
+
         const updatedPlayer = updatePlayer(
           player,
           movement.x,
@@ -172,8 +177,11 @@ export function GameLoop({ canvasRef }) {
   const updateXPGemsSystem = useCallback(
     (dt) => {
       const player = state.player;
-      const pickupRange = 50 * player.stats.pickupRange;
-      const magnetRange = 150 * player.stats.pickupRange;
+
+      // Apply pickup range modifier from passive
+      const passivePickupMod = player.passiveManager?.getPickupRangeModifier() || 1.0;
+      const pickupRange = 50 * player.stats.pickupRange * passivePickupMod;
+      const magnetRange = 150 * player.stats.pickupRange * passivePickupMod;
 
       const remainingGems = [];
 
@@ -184,7 +192,9 @@ export function GameLoop({ canvasRef }) {
 
         // Collect gem if in pickup range
         if (dist < pickupRange) {
-          addXp(gem.value);
+          // Apply XP modifier from passive
+          const modifiedXp = player.passiveManager?.onXpCollected(gem.value, gem.isGold) || gem.value;
+          addXp(modifiedXp);
           return; // Don't add to remaining
         }
 
@@ -257,6 +267,9 @@ export function GameLoop({ canvasRef }) {
    * 8. Check Collisions
    */
   const checkCollisionsCallback = useCallback(() => {
+    const player = state.player;
+    const passiveManager = player.passiveManager;
+
     // Projectile-Enemy collisions
     const projectileHits = checkProjectileEnemyCollisions(
       state.projectiles,
@@ -269,10 +282,26 @@ export function GameLoop({ canvasRef }) {
     projectileHits.forEach((hit) => {
       const enemyIndex = enemiesAfterDamage.findIndex((e) => e.id === hit.enemyId);
       if (enemyIndex !== -1) {
-        enemiesAfterDamage[enemyIndex] = damageEnemy(
-          enemiesAfterDamage[enemyIndex],
-          hit.damage
-        );
+        const enemy = enemiesAfterDamage[enemyIndex];
+
+        // Apply passive damage modifiers
+        let finalDamage = hit.damage;
+        if (passiveManager) {
+          finalDamage = calculateDamage(passiveManager, hit.damage, {
+            targetEnemy: enemy,
+            baseDamage: hit.damage,
+          });
+        }
+
+        enemiesAfterDamage[enemyIndex] = damageEnemy(enemy, finalDamage);
+
+        // Check for life steal
+        if (passiveManager) {
+          const healing = passiveManager.onDamageDealt(finalDamage, 'normal');
+          if (healing > 0) {
+            healPlayer(healing);
+          }
+        }
 
         // Remove projectile if not piercing
         if (!hit.piercing) {
@@ -280,7 +309,6 @@ export function GameLoop({ canvasRef }) {
         }
 
         // Create hit particle
-        const enemy = enemiesAfterDamage[enemyIndex];
         addParticle({
           id: generateId(),
           x: enemy.x,
@@ -303,7 +331,8 @@ export function GameLoop({ canvasRef }) {
     enemiesAfterDamage.forEach((enemy) => {
       if (isEnemyDead(enemy)) {
         killCount++;
-        // Spawn XP gem
+
+        // Spawn regular XP gem
         addXpGem({
           id: generateId(),
           x: enemy.x,
@@ -311,7 +340,18 @@ export function GameLoop({ canvasRef }) {
           value: enemy.score || 10,
           color: '#32CD32',
           size: 6,
+          isGold: false,
         });
+
+        // Check for special spawns from passive (gold nuggets, etc.)
+        if (passiveManager) {
+          const spawns = passiveManager.onEnemyKilled(enemy, { x: enemy.x, y: enemy.y });
+          spawns.forEach((spawn) => {
+            if (spawn.type === 'gold') {
+              addXpGem(spawn);
+            }
+          });
+        }
 
         // Death particles
         for (let i = 0; i < 8; i++) {
@@ -338,9 +378,15 @@ export function GameLoop({ canvasRef }) {
     }
 
     // Player-Enemy collisions
-    const playerHits = checkPlayerEnemyCollisions(state.player, aliveEnemies);
-    if (playerHits.length > 0 && !state.player.invulnerable) {
-      const totalDamage = playerHits.reduce((sum, hit) => sum + hit.damage, 0);
+    const playerHits = checkPlayerEnemyCollisions(player, aliveEnemies);
+    if (playerHits.length > 0 && !player.invulnerable) {
+      let totalDamage = playerHits.reduce((sum, hit) => sum + hit.damage, 0);
+
+      // Apply damage reduction from passive
+      if (passiveManager) {
+        totalDamage = calculateIncomingDamage(passiveManager, totalDamage);
+      }
+
       playerTakeDamage(totalDamage);
 
       // Set invulnerability frames
@@ -367,6 +413,7 @@ export function GameLoop({ canvasRef }) {
     addXpGem,
     addParticle,
     incrementKills,
+    healPlayer,
   ]);
 
   // Initialize wave on game start

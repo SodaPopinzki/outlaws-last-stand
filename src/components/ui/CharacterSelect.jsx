@@ -6,6 +6,7 @@ import {
   DEFAULT_CHARACTER,
 } from '../../data/characters';
 import { getWeaponById } from '../../data/weapons';
+import { createPassiveManager, applyPassiveToStats } from '../../systems/PassiveSystem';
 
 export function CharacterSelect() {
   const { setGameStatus, updatePlayer } = useGame();
@@ -44,13 +45,39 @@ export function CharacterSelect() {
   const handleStartGame = () => {
     // Initialize player with selected character
     const weapon = getWeaponById(selectedCharacter.startingWeapon);
+
+    // Create passive manager for selected character
+    const passiveManager = createPassiveManager(selectedCharacter);
+
+    // Apply passive effects to base stats
+    const baseStats = {
+      damage: 1.0,
+      fireRate: 1.0,
+      moveSpeed: 1.0,
+      maxHp: 1.0,
+      projectileSpeed: 1.0,
+      projectileSize: 1.0,
+      critChance: 0,
+      critDamage: 1.5,
+      pickupRange: 1.0,
+      armor: 0,
+      regen: 0,
+    };
+
+    const modifiedStats = applyPassiveToStats(selectedCharacter, baseStats);
+
+    // Calculate HP with passive modifiers
+    const maxHp = selectedCharacter.baseStats.hp * modifiedStats.maxHp;
+
     updatePlayer({
       character: selectedCharacter,
-      hp: selectedCharacter.baseStats.hp,
-      maxHp: selectedCharacter.baseStats.hp,
+      hp: maxHp,
+      maxHp: maxHp,
       speed: selectedCharacter.baseStats.speed,
       weapons: [weapon],
       activeWeaponIndex: 0,
+      stats: modifiedStats,
+      passiveManager: passiveManager,
     });
     setGameStatus(GAME_STATUS.PLAYING);
   };
