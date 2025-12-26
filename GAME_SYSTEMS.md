@@ -439,7 +439,156 @@ Dispatches actions for:
 
 ---
 
-### 9. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 9. **Wave Director System** (`src/systems/WaveDirector.js`)
+
+**Intelligent wave spawning and pacing system**:
+
+**WaveDirector Class**:
+Manages wave composition, enemy spawning, and dynamic difficulty:
+
+```javascript
+const director = new WaveDirector(difficulty, canvasWidth, canvasHeight);
+director.startWave(waveNumber, player, dispatch);
+director.updateSpawning(dt, player, dispatch);
+```
+
+**Wave Types** (5 types):
+- **NORMAL**: Standard wave with balanced enemy mix
+- **BOSS**: Every 5 waves - Boss + 40% normal enemy count
+- **SWARM**: Waves 3, 8, 13, 18... - Double enemies, mostly weak
+- **ELITE**: Waves 4, 9, 14, 19... - Half enemies, mostly strong
+- **MINI_BOSS**: Waves 7, 14, 21... - 70% enemies, balanced tiers
+
+**Spawn Patterns** (5 patterns):
+- **EDGES**: Random spawns from screen edges (normal waves)
+- **CLUSTER**: Groups of ~10 enemies (swarm waves)
+- **CARDINAL**: North, East, South, West spawns (elite waves)
+- **SURROUND**: Circle around player at 400px radius (mini-boss)
+- **WAVE_FRONT**: Line formation from one edge
+
+**Wave Composition**:
+Base enemy count formula: `10 + waveNumber × 3`
+
+Modifiers:
+- **Swarm waves**: 2.0× enemies (70% common, 25% uncommon)
+- **Elite waves**: 0.5× enemies (30% elite, 40% rare)
+- **Boss waves**: 0.4× enemies (60% common, 30% uncommon)
+- **Mini-boss**: 0.7× enemies (balanced distribution)
+
+**Tier Distribution** (Normal waves):
+- **Early game** (Wave 1-19): 40% common, 35% uncommon, 20% rare, 5% elite
+- **Mid game** (Wave 20-34): 30% common, 35% uncommon, 25% rare, 10% elite
+- **Late game** (Wave 35+): 20% common, 35% uncommon, 30% rare, 15% elite
+
+**Spawning System**:
+- Spawn queue with timing (not all at once)
+- Base spawn interval: 0.5s between spawns
+- Interval reduces by 1% per wave (max 30% faster)
+- Swarm waves: 40% faster spawning
+- Elite waves: 50% slower spawning
+- Minimum interval: 0.1s
+
+**Dynamic Difficulty Adjustment**:
+Real-time difficulty scaling based on player performance:
+
+**HP Tracking**:
+- Records player HP% at end of each wave
+- Maintains history of last 5 waves
+- Calculates average HP%
+
+**Difficulty Multiplier**:
+- Average HP > 75%: Increase multiplier by 0.05 (max 1.5×)
+- Average HP < 30%: Decrease multiplier by 0.05 (min 0.7×)
+- Affects enemy count in wave composition
+
+**Emergency Pause**:
+- Player HP < 20%: Pause spawning for 2 seconds
+- Gives player breathing room to recover
+- Only triggers once per low-HP period
+
+**Wave Announcements**:
+Visual announcements with color coding:
+
+- **Normal**: "WAVE X" (Gold #FFD700)
+- **Swarm**: "🌪️ SWARM INCOMING - WAVE X 🌪️" (Orange #FFA500)
+- **Elite**: "⚔️ ELITE FORCE - WAVE X ⚔️" (Dark Red #8B0000)
+- **Mini-Boss**: "💀 DEADLY ENCOUNTER - WAVE X 💀" (Purple #9370DB)
+- **Boss**: "🎩 LEGENDARY GUNSLINGER APPROACHES 🎩" (Red #FF0000)
+
+Duration: 3 seconds
+
+**Enemy Selection**:
+- Weighted random selection based on `spawnWeight`
+- Only spawns enemies with `waveRequirement ≤ currentWave`
+- Respects tier distribution percentages
+- Prevents impossible spawns (e.g., elite on wave 1)
+
+**Spawn Positioning**:
+Smart spawn position calculation:
+
+**Edge Spawns**:
+- Random edge (top, right, bottom, left)
+- 50px off-screen to prevent pop-in
+- Evenly distributed along edge
+
+**Cluster Spawns**:
+- Groups of ~10 enemies
+- Each cluster from random edge
+- 100px spread within cluster
+
+**Cardinal Spawns**:
+- 4 directions (N, E, S, W)
+- Centered on screen midpoint
+- 200px spread per direction
+
+**Surround Spawns**:
+- Circle around player
+- 400px radius
+- Evenly spaced by angle
+
+**Performance Tracking**:
+Wave statistics for balancing:
+
+```javascript
+{
+  waveNumber: 15,
+  waveType: 'ELITE',
+  duration: 45.2,           // seconds
+  kills: 23,
+  damageTaken: 150,
+  killRate: 0.51,           // kills per second
+  difficultyMultiplier: 1.15
+}
+```
+
+**Helper Functions**:
+- `startWave(waveNumber, player, dispatch)` - Initialize new wave
+- `updateSpawning(dt, player, dispatch)` - Spawn enemies over time
+- `adjustDifficulty(player)` - Dynamic difficulty adjustment
+- `trackKill()` - Record enemy kill
+- `trackDamageTaken(damage)` - Record damage
+- `isWaveComplete()` - Check if all enemies spawned
+- `getSpawnProgress()` - Get spawn progress (spawned/total)
+- `getWaveStats()` - Get wave performance statistics
+- `reset()` - Clear wave state
+
+**Integration with Game State**:
+Dispatches actions for:
+- Enemy spawning (`ADD_ENEMY`)
+- Wave announcements (`SHOW_WAVE_ANNOUNCEMENT`)
+
+**Balancing Features**:
+- Progressive difficulty scaling (enemy count, spawn rate)
+- Wave variety prevents monotony
+- Boss waves focus on boss fight (fewer adds)
+- Swarm waves test area damage
+- Elite waves test single-target damage
+- Emergency pause prevents unfair deaths
+- Difficulty adjusts to player skill level
+
+---
+
+### 10. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -492,7 +641,7 @@ Ties all systems together:
 
 ---
 
-### 10. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 11. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -632,6 +781,7 @@ src/
 │   ├── WeaponRenderer.js           # Weapon visual effects renderer
 │   ├── WeaponRenderer.example.js   # Renderer integration examples
 │   ├── BossAI.js                   # Boss behavior and attack patterns
+│   ├── WaveDirector.js             # Wave spawning and pacing
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -688,6 +838,7 @@ src/
 ✅ **Weapon evolution system** - 7 evolved weapons with special abilities
 ✅ **Boss phase system** - Multi-phase encounters with dialogue
 ✅ **Boss AI system** - Sophisticated attack patterns, movement, and telegraphing
+✅ **Wave Director system** - Intelligent spawning, 5 wave types, dynamic difficulty
 ✅ **Weapon renderer system** - Complete visual effects for all weapon types
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
@@ -707,14 +858,14 @@ src/
 ## 📝 Next Steps
 
 The foundation is complete! Ready to integrate:
-- Boss spawning logic integration (BossAI ready to use)
 - Enemy behaviors implementation (lunge, ranged, charge, phase, spawn)
+- Boss spawning integration with WaveDirector
 - Weapon evolution UI (level-up screen)
 - Boss dialogue and phase transition UI
 - Boss telegraph rendering (ground markers, warning lines, screen flash)
+- Wave announcement UI display
 - Weapon visual effects integration (WeaponRenderer in GameCanvas)
 - Sound effects and music
 - Level-up/upgrade selection screen
-- Boss warning/intro screens
 - Camera shake implementation
 - Mobile controls
