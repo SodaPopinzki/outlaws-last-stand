@@ -7,6 +7,7 @@ const GameContext = createContext(null);
 // Game status constants
 export const GAME_STATUS = {
   MENU: 'menu',
+  CHARACTER_SELECT: 'characterSelect',
   PLAYING: 'playing',
   PAUSED: 'paused',
   LEVEL_UP: 'levelUp',

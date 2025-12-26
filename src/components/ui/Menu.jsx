@@ -1,7 +1,7 @@
-import { useGame } from '../../context/GameContext';
+import { useGame, GAME_STATUS } from '../../context/GameContext';
 
 export function Menu() {
-  const { startGame } = useGame();
+  const { setGameStatus } = useGame();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-stone-900">
@@ -19,7 +19,7 @@ export function Menu() {
 
         {/* Start Button */}
         <button
-          onClick={startGame}
+          onClick={() => setGameStatus(GAME_STATUS.CHARACTER_SELECT)}
           className="px-12 py-4 bg-amber-600 hover:bg-amber-500 text-white text-2xl font-bold rounded-lg
                      transform transition-all duration-200 hover:scale-110
                      shadow-[0_0_20px_rgba(251,191,36,0.5)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]
