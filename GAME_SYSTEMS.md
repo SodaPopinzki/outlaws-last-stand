@@ -1,0 +1,353 @@
+# Outlaw's Last Stand - Game Systems Documentation
+
+Complete overview of all implemented game systems and features.
+
+---
+
+## 🎮 Core Game Systems
+
+### 1. **Game State Management** (`src/context/GameContext.jsx`)
+
+Comprehensive React Context-based state management:
+
+```javascript
+gameStatus: 'menu' | 'playing' | 'paused' | 'levelUp' | 'gameOver' | 'victory'
+
+player: {
+  x, y, hp, maxHp, speed, xp, level,
+  character, weapons[], activeWeaponIndex,
+  stats: { damage, fireRate, moveSpeed, maxHp, projectileSpeed,
+           projectileSize, critChance, critDamage, pickupRange,
+           armor, regen },
+  invulnerable, invulnerableTime
+}
+
+enemies[], projectiles[], xpGems[], particles[]
+wave, gameTime, kills
+camera: { x, y }
+settings: { soundEnabled, musicEnabled, difficulty }
+```
+
+**Actions (20+)**:
+- Player: UPDATE_PLAYER, DAMAGE_PLAYER, HEAL_PLAYER, ADD_XP, LEVEL_UP
+- Enemies: ADD/REMOVE/UPDATE_ENEMIES
+- Projectiles: ADD/REMOVE/UPDATE_PROJECTILES
+- XP Gems: ADD/REMOVE/UPDATE_XP_GEMS
+- Particles: ADD/REMOVE/UPDATE_PARTICLES
+- Game: SET_GAME_STATUS, RESET_GAME, INCREMENT_KILLS, NEXT_WAVE
+
+---
+
+### 2. **Game Loop System** (`src/hooks/useGameLoop.js`)
+
+60 FPS requestAnimationFrame-based game loop:
+
+- **Delta Time**: Capped at 100ms to prevent spiral of death
+- **Ordered Updates**: 8 systems executed in sequence
+- **Pausable**: Auto-pauses on LEVEL_UP and PAUSED states
+- **FPS Tracking**: Real-time performance monitoring
+- **Game Time**: Accurate elapsed time tracking
+
+**Update Order**:
+1. updatePlayer(dt)
+2. updateWeapons(dt)
+3. updateProjectiles(dt)
+4. updateEnemies(dt)
+5. updateXPGems(dt)
+6. updateParticles(dt)
+7. updateWaveSystem(dt)
+8. checkCollisions()
+
+---
+
+### 3. **Character System** (`src/data/characters.js`)
+
+**8 Unique Playable Characters**:
+
+| Character | HP | Speed | Pickup | Passive | Unlock |
+|-----------|-----|-------|--------|---------|--------|
+| **Drifter** | 100 | 180 | 60 | +10% damage solo | Default |
+| **Outlaw** | 80 | 200 | 50 | +20% XP, -10% HP | 500 kills |
+| **Marshal** | 120 | 160 | 70 | 15% damage reduction | Wave 15 |
+| **Prospector** | 90 | 170 | 100 | +50% pickup, gold drops | 1000 XP/run |
+| **Shaman** | 70 | 190 | 55 | +30% poison, 5% lifesteal | 10k poison dmg |
+| **Cavalry** | 110 | 220 | 45 | +20% speed, -30% cooldown | 50k distance |
+| **Gunslinger** | 60 | 160 | 50 | +25% fire rate | 10k projectiles |
+| **Hangman** | 100 | 175 | 65 | +25% dmg to slowed | 100 bosses |
+
+**Features**:
+- Base stats: hp, speed, pickup, damage, luck
+- Unique passive abilities with typed effects
+- Starting weapons per character
+- Unlock conditions with 7 types
+- Appearance data (4 color schemes)
+- localStorage progress tracking
+- Helper functions for unlock progress
+
+---
+
+### 4. **Weapon System** (`src/data/weapons.js`)
+
+**16 Unique Weapons** across 5 types:
+
+**Character Starting Weapons**:
+1. **Six-Shooter** (Drifter) - Balanced revolver
+2. **Sawed-Off** (Outlaw) - Close-range shotgun
+3. **Deputy Star** (Marshal) - Boomerang badge
+4. **Dynamite** (Prospector) - Explosive AOE
+5. **Snake Oil** (Shaman) - Poison vials
+6. **Horse Charge** (Cavalry) - Melee charge
+7. **Gatling Gun** (Gunslinger) - Rapid-fire
+8. **Lasso** (Hangman) - Pull & slow
+
+**Additional Weapons**:
+- Revolver, Rifle, Dual Pistols, Winchester
+- Tomahawk, Molotov, Crossbow, Peacemaker
+
+**Weapon Properties**:
+```javascript
+damage, fireRate, projectileSpeed, projectileSize
+piercing, spread, projectileCount, range, knockback
+explosionRadius, poisonDamage, critChance, slowAmount
+color, trailColor, rarity, level (1-8), maxLevel
+```
+
+**Features**:
+- 5 weapon types: PROJECTILE, EXPLOSIVE, MELEE, SPECIAL, POISON
+- Level scaling (+20% per level)
+- DPS calculation
+- Upgrade system with costs
+- Display info for UI
+- Special properties extraction
+
+---
+
+### 5. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+
+Ties all systems together:
+
+**Player System**:
+- WASD movement with boundary checking
+- Invulnerability frames (0.5s after hit)
+- Health regeneration
+- Aim angle tracking
+- Distance tracking for unlocks
+
+**Weapon System**:
+- Cooldown management
+- Firing on mouse click
+- Projectile spawning
+- Fire rate tracking for unlocks
+
+**Projectile System**:
+- Movement and lifetime
+- Range expiration
+- Out-of-bounds removal
+
+**Enemy System**:
+- AI pathfinding toward player
+- Position updates
+
+**XP Gem System**:
+- Pickup detection (50px * pickupRange)
+- Magnetism (150px * pickupRange)
+- Auto-collection
+- XP distribution
+
+**Particle System**:
+- Hit effects (gold)
+- Death explosions (8 particles)
+- Velocity-based movement
+- Fade-out over time
+
+**Wave System**:
+- Auto-spawn next wave
+- Enemy count scaling
+- 1 second delay between waves
+
+**Collision System**:
+- Projectile vs Enemy with damage
+- Player vs Enemy with i-frames
+- Piercing projectile support
+- Hit/death particles
+- Kill tracking
+- Progress tracking
+
+---
+
+## 📊 Progress & Unlocks
+
+**Tracked Stats**:
+- Total kills (Outlaw unlock)
+- Max wave reached (Marshal unlock)
+- Max XP in single run (Prospector unlock)
+- Total poison damage (Shaman unlock)
+- Distance traveled (Cavalry unlock)
+- Projectiles fired (Gunslinger unlock)
+- Bosses killed (Hangman unlock)
+
+**Persistence**:
+- localStorage for character progress
+- Auto-save on game over
+- Progress bars for locked characters
+
+---
+
+## 🎨 Visual Systems
+
+### Particle System
+- Hit particles on enemy damage
+- Death explosions with color matching
+- Configurable lifetime and fade
+- Velocity-based physics
+
+### Rendering
+- Canvas-based 2D rendering
+- Entity colors and sizes
+- Weapon trail colors
+- Particle alpha blending
+
+---
+
+## 🎯 Input System (`src/hooks/useInput.js`)
+
+**Keyboard**:
+- WASD / Arrow keys for movement
+- Normalized diagonal movement
+- Key state tracking
+
+**Mouse**:
+- Position tracking relative to canvas
+- Button state management
+- Aiming system integration
+
+**Features**:
+- Movement vector calculation
+- Canvas reference management
+- Event handler integration
+
+---
+
+## 🔊 Audio System (`src/hooks/useAudio.js`)
+
+**Features**:
+- Sound effect loading and caching
+- Music playback with looping
+- Volume control (0-1)
+- Mute toggle
+- Overlapping sound support (cloning)
+
+---
+
+## 📐 Utility Systems
+
+### Math Utilities (`src/utils/math.js`)
+- Distance, angle calculations
+- Vector normalization
+- Linear interpolation
+- Circle/rectangle collision
+- Degree/radian conversion
+- Random ranges
+- Velocity from angle
+
+### Random Utilities (`src/utils/random.js`)
+- Array element selection
+- Array shuffling
+- ID generation
+- Probability checks
+- Edge/canvas position generation
+
+---
+
+## 🏗️ Project Structure
+
+```
+src/
+├── components/
+│   ├── game/
+│   │   ├── GameCanvas.jsx          # Canvas renderer
+│   │   └── GameLoop.jsx            # Game orchestration
+│   ├── ui/
+│   │   ├── HUD.jsx                 # Health, score, wave
+│   │   ├── Menu.jsx                # Main menu
+│   │   └── GameOver.jsx            # Game over screen
+│   └── entities/
+│       ├── Player.js               # Player logic
+│       ├── Enemy.js                # Enemy AI
+│       └── Projectile.js           # Projectile physics
+├── systems/
+│   ├── collision.js                # Collision detection
+│   ├── spawning.js                 # Enemy/projectile spawning
+│   ├── weapons.js                  # Weapon manager
+│   └── upgrades.js                 # Upgrade system
+├── data/
+│   ├── characters.js               # 8 characters
+│   ├── weapons.js                  # 16 weapons
+│   ├── enemies.js                  # Enemy types
+│   └── bosses.js                   # Boss definitions
+├── hooks/
+│   ├── useGameLoop.js              # Game loop hook
+│   ├── useInput.js                 # Input handling
+│   └── useAudio.js                 # Audio manager
+├── utils/
+│   ├── math.js                     # Math utilities
+│   └── random.js                   # Random generators
+└── context/
+    └── GameContext.jsx             # Game state management
+```
+
+---
+
+## 🚀 Tech Stack
+
+- **React 19.2.0** - UI framework
+- **Vite 7.3.0** - Build tool & dev server
+- **Tailwind CSS 4.1.18** - Styling
+- **Canvas API** - 2D rendering
+- **localStorage** - Progress persistence
+- **requestAnimationFrame** - Game loop
+
+---
+
+## 📈 Performance Features
+
+- Delta time capping (100ms max)
+- Efficient state updates
+- Particle cleanup
+- Entity removal when dead/expired
+- FPS monitoring
+- Optimized collision checks
+
+---
+
+## 🎮 Game Features Implemented
+
+✅ 8 Unique playable characters
+✅ 16 Different weapons with unique mechanics
+✅ Character unlock system with 7 conditions
+✅ Comprehensive state management
+✅ 60 FPS game loop with delta time
+✅ Enemy spawning and wave system
+✅ Projectile physics
+✅ Collision detection
+✅ XP gem collection with magnetism
+✅ Particle effects system
+✅ Health/invulnerability system
+✅ Progress tracking and persistence
+✅ Input handling (keyboard + mouse)
+✅ Audio system foundation
+
+---
+
+## 📝 Next Steps
+
+The foundation is complete! Ready to add:
+- Boss encounters
+- More enemy variety
+- Upgrade/level-up UI
+- Character selection screen
+- Sound effects and music
+- Additional weapons
+- More particle effects
+- Camera shake
+- Mobile controls
