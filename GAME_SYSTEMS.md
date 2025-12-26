@@ -588,7 +588,160 @@ Dispatches actions for:
 
 ---
 
-### 10. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 10. **Level Up System** (`src/systems/LevelUpSystem.js`)
+
+**Intelligent upgrade generation when player levels up**:
+
+**LevelUpSystem Class**:
+Generates 4 upgrade options with smart prioritization:
+
+```javascript
+const levelUpSystem = new LevelUpSystem();
+const options = levelUpSystem.generateUpgradeOptions(player, waveNumber);
+levelUpSystem.applyUpgrade(player, selectedOption, dispatch);
+```
+
+**Upgrade Priority System**:
+Upgrades are offered in order of priority:
+
+1. **Weapon Evolutions** (Priority 1000) - Always offered if available
+2. **Weapon Upgrades** (Priority 100) - 60% chance per weapon (level < 8)
+3. **New Weapons** (Priority 50) - If player has < 6 weapons
+4. **Stat Upgrades** (Priority 10) - Fill remaining slots to reach 4 options
+
+**4 Upgrade Types**:
+
+**1. Weapon Evolution** (Legendary):
+- Combines two max-level weapons
+- Always offered when available
+- Takes priority over all other upgrades
+- Example: Six-Shooter + Rifle → Peacemaker
+
+**2. Weapon Upgrade**:
+- Levels up existing weapon (1 → 8)
+- 60% chance per eligible weapon
+- Shows damage/cooldown/pierce/count increases
+- Example: "Six-Shooter (Lv 3)" → "+20% damage, -8% cooldown"
+
+**3. New Weapon**:
+- Adds new weapon to loadout
+- Only offered if < 6 weapons
+- Maximum 2 new weapons per level-up
+- Cannot offer evolved weapons (evolution-only)
+
+**4. Stat Upgrade**:
+- Permanent passive bonuses
+- Stackable with limits
+- Fills remaining slots (always 4 total options)
+
+**12 Stat Upgrades Available**:
+
+| Stat | Name | Icon | Effect | Max Stacks |
+|------|------|------|--------|------------|
+| **Max HP** | Iron Heart | ❤️ | +20 Max HP (heals immediately) | 10 |
+| **Move Speed** | Quick Draw | ⚡ | +15% Move Speed | 5 |
+| **Damage** | Sharpshooter | 💥 | +15% Damage | 8 |
+| **Pickup Radius** | Magnetism | 🧲 | +30% Pickup Radius | 5 |
+| **Luck** | Gambler's Fortune | 🍀 | +20% Luck (drops & crits) | 5 |
+| **Regen** | Healing Factor | 💚 | +1 HP/sec Regeneration | 10 |
+| **Armor** | Thick Hide | 🛡️ | +5% Damage Reduction | 6 |
+| **Critical** | Deadeye | 🎯 | +10% Critical Chance | 5 |
+| **Cooldown** | Rapid Fire | ⏱️ | -10% Weapon Cooldowns | 5 |
+| **Pierce** | Penetrating Rounds | 🔫 | +1 Pierce (all weapons) | 5 |
+| **Projectile Speed** | High Velocity | 💨 | +20% Projectile Speed | 4 |
+| **Crit Damage** | Executioner | 💀 | +50% Critical Damage | 4 |
+
+**Maximum Stat Values**:
+- Max HP: +200 HP total (10 stacks)
+- Move Speed: +75% (5 stacks)
+- Damage: +120% (8 stacks)
+- Pickup Radius: +150% (5 stacks)
+- Armor: 30% damage reduction (6 stacks)
+- Critical Chance: 50% (5 stacks)
+- Cooldown Reduction: 50% (5 stacks)
+- Pierce: +5 (5 stacks)
+- Critical Damage: +200% (4 stacks, base 150%)
+
+**Rarity System**:
+Upgrades are color-coded by rarity:
+
+- **Legendary** (Gold #FFD700): Weapon evolutions
+  - 3px border, glowing shadow, pulsing animation
+- **Rare** (Purple #9370DB): Special weapons
+  - 2px border, glowing shadow
+- **Uncommon** (Blue #4169E1): Advanced weapons
+  - 2px border
+- **Common** (Silver #C0C0C0): Standard weapons, stat upgrades
+  - 2px border
+
+**Weapon Upgrade Descriptions**:
+Automatically calculated from weapon scaling:
+- Damage scaling: "+20% damage" (if scaling.damage = 1.2)
+- Cooldown scaling: "-8% cooldown" (if scaling.cooldown = 0.92)
+- Count scaling: "+1 projectile" (every 2 levels if scaling.count = 0.5)
+- Pierce scaling: "+1 pierce" (every 3 levels if scaling.pierce = 0.33)
+
+**Smart Selection**:
+- Avoids offering maxed stat upgrades
+- Only offers weapons player doesn't have
+- Shuffles options for variety
+- Tracks last offered upgrades
+
+**State Tracking**:
+```javascript
+statUpgradeCounts: Map {
+  'max_hp' => 3,
+  'damage' => 5,
+  'critical' => 2
+}
+```
+
+**Helper Functions**:
+- `generateUpgradeOptions(player, waveNumber)` - Generate 4 options
+- `applyUpgrade(player, upgrade, dispatch)` - Apply selected upgrade
+- `getStatUpgradeCount(statId)` - Get times stat was upgraded
+- `reset()` - Clear counts for new game
+- `formatUpgradeCard(upgrade)` - Format for UI display
+- `getRarityColor(rarity)` - Get color by rarity
+- `getRarityBorderStyle(rarity)` - Get border style by rarity
+
+**Integration with Game State**:
+Dispatches actions for:
+- Weapon evolution (`EVOLVE_WEAPON`)
+- Weapon upgrade (`UPGRADE_WEAPON`)
+- New weapon (`ADD_WEAPON`)
+- Stat upgrade (`APPLY_STAT_UPGRADE`)
+
+**Upgrade Application**:
+Each upgrade type applies differently:
+- **Evolution**: Removes component weapons, adds evolved weapon
+- **Weapon Upgrade**: Increments weapon level, recalculates stats
+- **New Weapon**: Adds to weapons array (if < 6)
+- **Stat Upgrade**: Modifies player.stats, tracks count
+
+**UI Display Format**:
+```javascript
+{
+  id: 'stat_damage',
+  type: 'statUpgrade',
+  name: 'Sharpshooter',
+  icon: '💥',
+  description: '+15% Damage',
+  rarity: 'common',
+  stackInfo: '3/8'  // Current/Max stacks
+}
+```
+
+**Balancing Features**:
+- Evolution priority ensures exciting moments
+- 60% weapon upgrade chance creates variety
+- Stat cap prevents infinite scaling
+- New weapons only if slots available
+- Always 4 options for meaningful choice
+
+---
+
+### 11. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -641,7 +794,7 @@ Ties all systems together:
 
 ---
 
-### 11. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 12. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -782,6 +935,7 @@ src/
 │   ├── WeaponRenderer.example.js   # Renderer integration examples
 │   ├── BossAI.js                   # Boss behavior and attack patterns
 │   ├── WaveDirector.js             # Wave spawning and pacing
+│   ├── LevelUpSystem.js            # Upgrade generation and stat bonuses
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -839,6 +993,7 @@ src/
 ✅ **Boss phase system** - Multi-phase encounters with dialogue
 ✅ **Boss AI system** - Sophisticated attack patterns, movement, and telegraphing
 ✅ **Wave Director system** - Intelligent spawning, 5 wave types, dynamic difficulty
+✅ **Level Up system** - 4 upgrade types, 12 stat bonuses, priority-based selection
 ✅ **Weapon renderer system** - Complete visual effects for all weapon types
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
@@ -860,12 +1015,12 @@ src/
 The foundation is complete! Ready to integrate:
 - Enemy behaviors implementation (lunge, ranged, charge, phase, spawn)
 - Boss spawning integration with WaveDirector
-- Weapon evolution UI (level-up screen)
+- Level-up UI screen (4 upgrade cards with rarity styling)
 - Boss dialogue and phase transition UI
 - Boss telegraph rendering (ground markers, warning lines, screen flash)
 - Wave announcement UI display
 - Weapon visual effects integration (WeaponRenderer in GameCanvas)
+- Stat upgrade application in game state
 - Sound effects and music
-- Level-up/upgrade selection screen
 - Camera shake implementation
 - Mobile controls
