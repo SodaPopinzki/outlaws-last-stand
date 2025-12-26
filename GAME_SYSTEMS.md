@@ -123,7 +123,73 @@ color, trailColor, rarity, level (1-8), maxLevel
 
 ---
 
-### 5. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 5. **Weapon Evolution System** (`src/systems/WeaponEvolution.js`)
+
+**7 Legendary Evolutions** - Combine two max-level (8) weapons to create powerful evolved forms:
+
+1. **Peacemaker** 🔫💥 (Six-Shooter + Rifle)
+   - Rapid-fire explosive rounds
+   - 60 radius explosions per shot
+   - Combines speed with devastating power
+
+2. **Hellfire** 🔥💀 (Dynamite + Molotov Whiskey)
+   - Massive 200 radius explosion
+   - Creates **permanent** burning ground
+   - 15 damage per tick, burns forever
+
+3. **Death Spin** 🪓🌀 (Lasso + Tomahawk)
+   - 3 orbiting tomahawks
+   - 100 radius orbit, 360°/sec rotation
+   - 30% slow on hit
+
+4. **Curse of the West** ☠️📜 (Snake Oil + Wanted Poster)
+   - Poison spreads between marked enemies
+   - Chains up to 5 enemies within 150 range
+   - +40% damage bonus to marked targets
+
+5. **Lead Storm** ⚙️⭐ (Gatling Gun + Deputy Star)
+   - Rapid-fire bouncing projectiles
+   - 4 bounces, only 15% damage reduction
+   - 0.12s cooldown (8.3 shots/sec)
+
+6. **Whirlwind** 🌪️🔪 (Bowie Knife + Pickaxe)
+   - Constant 360° melee damage
+   - 8 spinning blades, 80 radius
+   - 30% bleed chance, 10 damage over 3s
+
+7. **Boomstick** 💥💣 (Sawed-Off + Powder Keg)
+   - Shotgun fires 4 mini-explosives
+   - 80 radius explosions per pellet
+   - Heavy knockback (25)
+
+**System Features**:
+- `checkEvolutionEligibility()` - Validates both weapons at max level
+- `getAvailableEvolutions()` - Returns all currently available evolutions
+- `evolveWeapons()` - Removes component weapons, adds evolved weapon
+- `getEvolutionCardData()` - Formats data for "EVOLUTION AVAILABLE" upgrade cards
+- `createEvolutionNotification()` - Creates evolution alert notifications
+- `getEvolutionHint()` - Shows evolution paths in weapon tooltips
+- `unlockEvolution()` - Tracks evolutions in localStorage
+- `getEvolutionAchievementProgress()` - Progress toward "Master Gunsmith"
+
+**Evolution Process**:
+1. Player reaches level 8 with two compatible weapons
+2. System detects evolution eligibility
+3. Shows special "EVOLUTION AVAILABLE" card during level-up
+4. Player chooses evolution
+5. Both weapons removed, evolved weapon added at level 1
+6. Evolution tracked for achievements
+7. Can level evolved weapon 1-8 like regular weapons
+
+**Achievement Milestones**:
+- First Evolution: 1/7 unlocked
+- Skilled Crafter: 3/7 unlocked
+- Weapon Master: 5/7 unlocked
+- Master Gunsmith: 7/7 unlocked (all evolutions)
+
+---
+
+### 6. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -176,7 +242,7 @@ Ties all systems together:
 
 ---
 
-### 9. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 7. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -311,6 +377,8 @@ src/
 ├── systems/
 │   ├── PassiveSystem.js            # Passive ability manager
 │   ├── PassiveSystem.example.js    # Integration examples
+│   ├── WeaponEvolution.js          # Weapon evolution system
+│   ├── WeaponEvolution.example.js  # Evolution integration examples
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -358,9 +426,11 @@ src/
 ## 🎮 Game Features Implemented
 
 ✅ 8 Unique playable characters
-✅ 16 Different weapons with unique mechanics
+✅ 15 Different weapons with unique mechanics
+✅ 7 Legendary weapon evolutions (combining max-level weapons)
 ✅ Character unlock system with 7 conditions
 ✅ **Passive ability system** - All 8 passives fully integrated
+✅ **Weapon evolution system** - 7 evolved weapons with special abilities
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
 ✅ 60 FPS game loop with delta time
