@@ -189,7 +189,56 @@ color, trailColor, rarity, level (1-8), maxLevel
 
 ---
 
-### 6. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 6. **Weapon Renderer System** (`src/systems/WeaponRenderer.js`)
+
+**Visual rendering system** for all weapon projectiles and effects:
+
+**Projectile Rendering**:
+- **Bullets**: Elongated with trails, gradient coloring, weapon-specific colors
+- **Explosives**: Animated fuse, smoke trail, sparking tip
+- **Orbit Weapons**: Rope/chain connection to player, rotating sprites
+- **Ground Effects**: Animated fire pools (20 flames), poison clouds
+- **Bouncing**: 5-pointed star with sparkle trail, bounce indicators
+- **Clouds**: 12 animated particles, radial gradient, pulsing
+
+**Visual Effects**:
+- **Muzzle Flash**: 0.05s cone gradient, directional based on aim
+- **Impact Particles**: 10-20 particles, velocity-based, color-coded
+- **Explosion**: 30 particles, shockwave ring, screen effects
+- **Fire Pools**: Gradient flames (red → orange → gold), radial glow
+- **Horse Charge**: Dust particles, brown/tan color, trailing effect
+
+**Screen Effects**:
+- **Screen Shake**: Intensity-based (0-30px), duration fade (0.5s max)
+- **Screen Flash**: Color overlay (max 30% opacity), 0.2s fade
+- **Critical Hits**: Red particles, 15px shake, red flash
+
+**Weapon-Specific Enhancements**:
+- Legendary weapons: 60% glow intensity vs 30%
+- Shotguns: Screen flash on fire
+- Explosives: Shake intensity = radius / 5
+- Evolution weapons: Enhanced particle counts
+
+**Effect Management**:
+- Time-based animation (sine waves, rotations)
+- Auto-cleanup of expired effects
+- Particle aging and alpha fade
+- Effect stacking (highest priority wins)
+
+**Integration**:
+```javascript
+renderer.update(dt);
+renderer.applyScreenEffects();
+// Render game objects
+renderer.renderMuzzleFlashes();
+renderer.renderImpactParticles();
+renderer.renderGroundEffects();
+renderer.removeScreenEffects();
+```
+
+---
+
+### 7. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -242,7 +291,7 @@ Ties all systems together:
 
 ---
 
-### 7. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 8. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -379,6 +428,8 @@ src/
 │   ├── PassiveSystem.example.js    # Integration examples
 │   ├── WeaponEvolution.js          # Weapon evolution system
 │   ├── WeaponEvolution.example.js  # Evolution integration examples
+│   ├── WeaponRenderer.js           # Weapon visual effects renderer
+│   ├── WeaponRenderer.example.js   # Renderer integration examples
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
