@@ -89,7 +89,7 @@ settings: { soundEnabled, musicEnabled, difficulty }
 
 ### 4. **Weapon System** (`src/data/weapons.js`)
 
-**16 Unique Weapons** across 5 types:
+**15 Base Weapons + 7 Evolutions** across 4 categories:
 
 **Character Starting Weapons**:
 1. **Six-Shooter** (Drifter) - Balanced revolver
@@ -238,7 +238,103 @@ renderer.removeScreenEffects();
 
 ---
 
-### 7. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 7. **Boss System** (`src/data/bosses.js`)
+
+**10 Legendary Gunslinger Bosses** - Epic encounters every 5 waves:
+
+| Boss | Wave | HP | Title | Attacks |
+|------|------|-----|-------|---------|
+| **Billy the Kid** 🤠 | 5 | 500 | The Fastest Gun | Quick Draw |
+| **Jesse James** 💣 | 10 | 1000 | The Notorious Outlaw | Dynamite Split, Circle Shot |
+| **Butch Cassidy** 🐎 | 15 | 1800 | The Wild Bunch Leader | Horse Charge, Bullet Spray |
+| **Sundance Kid** ☀️ | 20 | 2200 | Butch's Right Hand | Dual Wield, Spiral Shot |
+| **Calamity Jane** 🪓 | 25 | 2800 | The Frontier's Fiercest | Tomahawk Orbit, Quick Draw |
+| **Doc Holliday** ☠️ | 30 | 3500 | The Deadly Dentist | Poison Cloud, Circle Shot |
+| **Wild Bill** 🎯 | 35 | 4500 | The Deadliest Marksman | Tracking Shots, Spiral Barrage |
+| **Wyatt Earp** ⭐ | 40 | 6000 | The Lawman Legend | Deputy Stars, Law & Order |
+| **Buffalo Bill** 🦬 | 45 | 8000 | The Wild West Showman | Stampede, Rifle Barrage |
+| **The Man with No Name** 🎩 | 50 | 12000 | The Ultimate Gunslinger | ALL ATTACKS |
+
+**Attack Patterns (14)**:
+- **Quick Draw**: Fast single shots at player
+- **Bullet Spray**: Wide spread of projectiles
+- **Dynamite Split**: Explosives that split into 4 mini-bombs
+- **Fire Charge**: Charges leaving burning ground trail
+- **Tomahawk Orbit**: Returning tomahawks that orbit
+- **Poison Cloud**: Lingering damage clouds
+- **Tracking Shots**: Bullets that follow player
+- **Orbit Stars**: Stars that orbit then launch
+- **Stampede**: High-speed charges in multiple directions
+- **Time Slow**: Slows player movement by 70%
+- **Clone Attack**: Spawns shadow clones
+- **Circle Shot**: 360° projectile burst
+- **Spiral Shot**: Rotating spiral pattern
+- **Summon Minions**: Spawns regular enemies
+
+**Phase System**:
+- **Phase 1** (100% HP): Normal attacks
+- **Phase 2** (50% HP): Enhanced mechanics
+  - Billy: +50% speed, -30% cooldowns
+  - Jesse: Summons gang members (3 bandits every 10s)
+  - Butch: +50% fire trail radius, -30% charge cooldown
+  - Sundance: 360° bullet spray, +50% projectile count
+  - Jane: Tomahawks split into 3 on return
+  - Doc: Poison clouds slow by 50%, +50% duration
+  - Bill: Tracking shots pierce walls, +30% tracking
+  - Wyatt: Stars launch at player every 2s
+  - Buffalo: Stampede charges in 4 directions
+- **Phase 3** (25% HP - Final Boss Only):
+  - Shadow clones spawn constantly
+  - +50% damage, -60% clone cooldown
+
+**Dialogue System**:
+```javascript
+dialogue: {
+  intro: "Opening taunt",
+  phase2: "Mid-fight quote",
+  phase3: "Desperate final phase" (final boss only),
+  death: "Final words"
+}
+```
+
+**Death Rewards**:
+- **XP**: 100 (Billy) → 5000 (Man with No Name)
+- **Special Drops**:
+  - health_restore, weapon_upgrade, damage_boost
+  - crit_boost, health_max_up, pierce_boost
+  - speed_boost, cooldown_reduction
+  - legendary_weapon (final boss)
+
+**Helper Functions**:
+- `getBossForWave(waveNumber)` - Get boss for specific wave
+- `isBossWave(waveNumber)` - Check if wave has a boss
+- `getBossWaves()` - Get all boss wave numbers [5,10,15...50]
+- `getScaledBossStats(boss, difficulty)` - Scale boss for difficulty
+- `getCurrentPhase(boss, currentHp, maxHp)` - Get active phase
+- `checkPhaseTransition(boss, previousHp, currentHp, maxHp)` - Detect phase change
+- `getBossById(bossId)` - Lookup boss by ID
+- `getNextBoss(currentWave)` - Get upcoming boss
+- `getWavesUntilNextBoss(currentWave)` - Countdown to next boss
+- `getBossProgress(defeatedBossIds)` - Track defeated bosses
+- `getBossAchievements(defeatedBossIds)` - Achievement milestones
+
+**Achievement Milestones**:
+- **First Blood**: Defeat first boss (Billy the Kid)
+- **Halfway There**: Defeat 5 bosses
+- **Boss Hunter**: Defeat 8 bosses
+- **Legend Slayer**: Defeat all 10 bosses
+- **The New Legend**: Defeat The Man with No Name
+
+**Final Boss Special Mechanics**:
+The Man with No Name (Wave 50) has 3 unique abilities:
+1. **Time Manipulation**: Slows player to 30% speed for 3s
+2. **Shadow Clones**: Spawns 2 clones that copy attacks (10s duration)
+3. **All Attack Patterns**: Uses every boss attack type
+4. **3 Phases**: Only boss with third phase (25% HP threshold)
+
+---
+
+### 8. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -291,7 +387,7 @@ Ties all systems together:
 
 ---
 
-### 8. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 9. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -436,9 +532,9 @@ src/
 │   └── upgrades.js                 # Upgrade system
 ├── data/
 │   ├── characters.js               # 8 characters
-│   ├── weapons.js                  # 16 weapons
-│   ├── enemies.js                  # Enemy types
-│   └── bosses.js                   # Boss definitions
+│   ├── weapons.js                  # 15 weapons + 7 evolutions
+│   ├── enemies.js                  # 12 enemy types
+│   └── bosses.js                   # 10 legendary bosses
 ├── hooks/
 │   ├── useGameLoop.js              # Game loop hook
 │   ├── useInput.js                 # Input handling
@@ -476,17 +572,21 @@ src/
 
 ## 🎮 Game Features Implemented
 
-✅ 8 Unique playable characters
+✅ 8 Unique playable characters with unlock conditions
 ✅ 15 Different weapons with unique mechanics
 ✅ 7 Legendary weapon evolutions (combining max-level weapons)
+✅ 12 Enemy types across 4 tiers (Common, Uncommon, Rare, Elite)
+✅ 10 Legendary gunslinger bosses (every 5 waves)
 ✅ Character unlock system with 7 conditions
 ✅ **Passive ability system** - All 8 passives fully integrated
 ✅ **Weapon evolution system** - 7 evolved weapons with special abilities
+✅ **Boss phase system** - Multi-phase encounters with dialogue
+✅ **Weapon renderer system** - Complete visual effects for all weapon types
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
 ✅ 60 FPS game loop with delta time
 ✅ Enemy spawning and wave system
-✅ Projectile physics
+✅ Projectile physics and visual effects
 ✅ Collision detection
 ✅ XP gem collection with magnetism
 ✅ Particle effects system
@@ -499,13 +599,14 @@ src/
 
 ## 📝 Next Steps
 
-The foundation is complete! Ready to add:
-- Boss encounters
-- More enemy variety
-- Upgrade/level-up UI
-- Character selection screen
+The foundation is complete! Ready to integrate:
+- Boss AI and spawning logic
+- Enemy behaviors implementation (lunge, ranged, charge, phase, spawn)
+- Weapon evolution UI (level-up screen)
+- Boss dialogue and phase transition UI
+- Weapon visual effects integration (WeaponRenderer in GameCanvas)
 - Sound effects and music
-- Additional weapons
-- More particle effects
-- Camera shake
+- Level-up/upgrade selection screen
+- Boss warning/intro screens
+- Camera shake implementation
 - Mobile controls
