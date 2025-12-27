@@ -1131,7 +1131,203 @@ emitter.emit({
 
 ---
 
-### 13. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 13. **Screen Effects System** (`src/systems/ScreenEffects.js`)
+
+Full-screen visual effects for dramatic game moments and feedback.
+
+**ScreenShake Class**:
+```javascript
+shake.shake(intensity, duration);
+// intensity: pixels to shake (1-20)
+// duration: seconds
+// Automatically decays over time
+```
+
+**FlashOverlay Class**:
+```javascript
+flash.flash(color, duration, intensity);
+// Quick fade in (20%), long fade out (80%)
+// color: hex or rgba
+// intensity: alpha (0-1)
+```
+
+**VignetteEffect Class**:
+```javascript
+vignette.vignette(intensity, duration, color, persistent);
+// intensity: 0-1
+// persistent: true for pulsing effect (low HP)
+// Radial gradient from center
+```
+
+**SlowMotion Class**:
+```javascript
+slowMo.slowMotion(factor, duration);
+// factor: 0.1 (very slow) to 1.0 (normal)
+// Smooth transition in/out
+// Returns modified time scale
+```
+
+**ColorGrading Class**:
+```javascript
+colorGrade.setColorGrade(preset);
+// Presets: 'normal', 'sepia', 'blood', 'poison', 'noir', 'highNoon'
+// Smooth 0.5s transition between presets
+// Applies filters: brightness, contrast, saturation, hue, sepia
+```
+
+**Color Grade Presets**:
+1. **normal** - Default appearance
+2. **sepia** - Western film look (brightness 1.1, contrast 1.2, sepia 0.4)
+3. **blood** - Red tint for danger (contrast 1.3, red tint)
+4. **poison** - Green hue for poison (saturation 1.4, hue +100)
+5. **noir** - Black & white (saturation 0, contrast 1.5)
+6. **highNoon** - Bright golden (brightness 1.2, warm tint)
+
+**Main ScreenEffects Class**:
+```javascript
+const effects = createScreenEffects();
+
+// Update in game loop
+effects.update(dt);
+
+// Render color grading (before game objects)
+effects.render(ctx, width, height);
+
+// Render overlays (after game objects)
+effects.renderOverlays(ctx, width, height);
+
+// Trigger effects
+effects.triggerShake(10, 0.5);
+effects.triggerFlash('#FF0000', 0.3, 0.5);
+effects.triggerVignette(0.7, 0.5, '#8B0000');
+effects.triggerSlowMotion(0.3, 2.0);
+effects.setColorGrade('blood');
+
+// Get time scale for game logic
+const timeScale = effects.getTimeScale();
+```
+
+**Preset Effect Combinations** (12 presets):
+
+1. **PLAYER_HIT**
+   - Red vignette (0.6 intensity, 0.3s)
+   - Red flash (0.3 alpha, 0.15s)
+   - Small shake (3px, 0.1s)
+
+2. **EXPLOSION** (distance-based)
+   - Shake (0-15px based on distance)
+   - Orange flash (intensity by distance)
+   - Max distance: 300px
+
+3. **BOSS_SPAWN**
+   - Slow motion (0.3× speed, 1.5s)
+   - Dark red flash (0.5 alpha, 1.0s)
+   - Shake (8px, 0.6s)
+   - Color grade: 'blood'
+
+4. **BOSS_DEATH**
+   - Slow motion (0.2× speed, 2.0s)
+   - White flash (0.8 alpha, 1.5s)
+   - Heavy shake (20px, 1.0s)
+   - Return to 'normal' after 2s
+
+5. **LEVEL_UP**
+   - Golden flash (0.5 alpha, 0.5s)
+   - Medium shake (5px, 0.3s)
+
+6. **CRITICAL_HIT**
+   - Small shake (4px, 0.15s)
+   - Yellow flash (0.3 alpha, 0.1s)
+
+7. **LOW_HP_START**
+   - Persistent red vignette (pulses)
+   - Intensity: 0.5, pulsing at 2 Hz
+
+8. **LOW_HP_END**
+   - Stop vignette pulse
+
+9. **DEATH**
+   - Black flash (0.9 alpha, 2.0s)
+   - Color grade: 'noir'
+   - Slow motion (0.1× speed, 1.0s)
+
+10. **VICTORY**
+    - Slow motion (0.4× speed, 3.0s)
+    - Golden flash (0.4 alpha, 2.0s)
+    - Color grade: 'highNoon'
+
+11. **POISONED**
+    - Color grade: 'poison'
+    - Green vignette pulse (persistent)
+
+12. **POISON_END**
+    - Color grade: 'normal'
+    - Stop vignette
+
+**Usage Example**:
+```javascript
+import { createScreenEffects, SCREEN_EFFECT_PRESETS } from './ScreenEffects';
+
+const effects = createScreenEffects();
+
+// Trigger preset
+SCREEN_EFFECT_PRESETS.PLAYER_HIT(effects);
+
+// Custom explosion with distance
+const intensity = calculateExplosionIntensity(
+  playerX, playerY,
+  explosionX, explosionY
+);
+effects.triggerShake(15 * intensity, 0.4);
+
+// Check active effects
+const active = effects.getActiveEffects();
+// { shake: true, flash: false, vignette: true, ... }
+```
+
+**Integration Triggers**:
+- **Player damaged**: PLAYER_HIT preset
+- **Explosion nearby**: EXPLOSION with distance calculation
+- **Boss spawned**: BOSS_SPAWN (dramatic entrance)
+- **Boss defeated**: BOSS_DEATH (epic conclusion)
+- **Player level up**: LEVEL_UP (celebration)
+- **Critical hit**: CRITICAL_HIT (impact feedback)
+- **HP < 30%**: LOW_HP_START (danger warning)
+- **HP recovered**: LOW_HP_END (safety)
+- **Player death**: DEATH (game over)
+- **Victory**: VICTORY (win celebration)
+- **Poison DOT**: POISONED (status effect)
+- **Poison cleared**: POISON_END
+
+**Performance Notes**:
+- Time scale affects game logic (multiply dt by timeScale)
+- Effects stack (shake intensity adds, vignette takes max)
+- Color grading uses CSS filters (GPU accelerated)
+- Smooth transitions prevent jarring changes
+- All effects auto-cleanup when duration expires
+
+**Rendering Pipeline**:
+```javascript
+// 1. Apply color grading
+effects.render(ctx, width, height);
+
+// 2. Apply shake offset to camera
+const shake = effects.getShakeOffset();
+ctx.translate(shake.x, shake.y);
+
+// 3. Render game objects with time scale
+const dt = baseDt * effects.getTimeScale();
+
+// 4. Reset shake
+ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+// 5. Render overlays
+effects.renderOverlays(ctx, width, height);
+```
+
+---
+
+### 14. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -1184,7 +1380,7 @@ Ties all systems together:
 
 ---
 
-### 14. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 15. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -1328,6 +1524,7 @@ src/
 │   ├── LevelUpSystem.js            # Upgrade generation and stat bonuses
 │   ├── MetaProgression.js          # Persistent progression and achievements
 │   ├── ParticleSystem.js           # Particle effects with object pooling
+│   ├── ScreenEffects.js            # Screen shake, flash, vignette, slow-mo, color grading
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -1389,6 +1586,7 @@ src/
 ✅ **Meta Progression system** - Persistent upgrades, 2 currencies, 50+ achievements
 ✅ **Weapon renderer system** - Complete visual effects for all weapon types
 ✅ **Particle system** - 15 preset effects, object pooling, LOD optimization
+✅ **Screen effects system** - Shake, flash, vignette, slow-mo, 6 color grades, 12 presets
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
 ✅ 60 FPS game loop with delta time
