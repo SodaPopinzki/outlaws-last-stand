@@ -5,6 +5,7 @@ import { GameOver } from './components/ui/GameOver';
 import { HUD } from './components/ui/HUD';
 import { CharacterSelect } from './components/ui/CharacterSelect';
 import LevelUpScreen from './components/ui/LevelUpScreen';
+import PauseMenu from './components/ui/PauseMenu';
 
 function GameContent() {
   const { state } = useGame();
@@ -19,6 +20,15 @@ function GameContent() {
         <div className="relative">
           <HUD />
           <GameCanvas />
+          <PauseMenu />
+        </div>
+      )}
+
+      {state.gameStatus === GAME_STATUS.PAUSED && (
+        <div className="relative">
+          <HUD />
+          <GameCanvas />
+          <PauseMenu />
         </div>
       )}
 
