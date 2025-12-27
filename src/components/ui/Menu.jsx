@@ -1,7 +1,14 @@
+import { useState, useMemo } from 'react';
 import { useGame, GAME_STATUS } from '../../context/GameContext';
+import MetaUpgradeShop from './MetaUpgradeShop';
+import { MetaProgression } from '../../systems/MetaProgression';
 
 export function Menu() {
   const { setGameStatus } = useGame();
+  const [showUpgradeShop, setShowUpgradeShop] = useState(false);
+
+  // Initialize MetaProgression system (persists across app sessions)
+  const metaProgression = useMemo(() => new MetaProgression(), []);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-amber-900 via-amber-800 to-stone-900">
@@ -17,16 +24,28 @@ export function Menu() {
           <p className="text-xl text-amber-200 italic">Survive the endless waves</p>
         </div>
 
-        {/* Start Button */}
-        <button
-          onClick={() => setGameStatus(GAME_STATUS.CHARACTER_SELECT)}
-          className="px-12 py-4 bg-amber-600 hover:bg-amber-500 text-white text-2xl font-bold rounded-lg
-                     transform transition-all duration-200 hover:scale-110
-                     shadow-[0_0_20px_rgba(251,191,36,0.5)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]
-                     border-4 border-amber-400"
-        >
-          START GAME
-        </button>
+        {/* Buttons */}
+        <div className="flex flex-col gap-4">
+          <button
+            onClick={() => setGameStatus(GAME_STATUS.CHARACTER_SELECT)}
+            className="px-12 py-4 bg-amber-600 hover:bg-amber-500 text-white text-2xl font-bold rounded-lg
+                       transform transition-all duration-200 hover:scale-110
+                       shadow-[0_0_20px_rgba(251,191,36,0.5)] hover:shadow-[0_0_30px_rgba(251,191,36,0.8)]
+                       border-4 border-amber-400"
+          >
+            START GAME
+          </button>
+
+          <button
+            onClick={() => setShowUpgradeShop(true)}
+            className="px-12 py-4 bg-emerald-700 hover:bg-emerald-600 text-white text-xl font-bold rounded-lg
+                       transform transition-all duration-200 hover:scale-110
+                       shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:shadow-[0_0_30px_rgba(16,185,129,0.8)]
+                       border-4 border-emerald-500"
+          >
+            🏪 UPGRADES
+          </button>
+        </div>
 
         {/* Controls */}
         <div className="mt-12 bg-black/50 backdrop-blur-sm p-6 rounded-lg border-2 border-amber-600">
@@ -56,6 +75,18 @@ export function Menu() {
           Made with React + Canvas
         </p>
       </div>
+
+      {/* Meta Upgrade Shop Modal */}
+      {showUpgradeShop && (
+        <MetaUpgradeShop
+          metaProgression={metaProgression}
+          onClose={() => setShowUpgradeShop(false)}
+          onPurchase={(upgradeType, id) => {
+            // Purchase handled by MetaUpgradeShop component
+            console.log('Purchased:', upgradeType, id);
+          }}
+        />
+      )}
     </div>
   );
 }
