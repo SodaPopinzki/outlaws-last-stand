@@ -4,7 +4,7 @@ A high-octane western-themed survivor-like game built with React and Vite. Fight
 
 ## 🎮 Play Now
 
-**[Live Demo](https://USERNAME.github.io/outlaws-last-stand/)** _(Replace USERNAME with your GitHub username after deployment)_
+**[Live Demo](https://SodaPopinzki.github.io/outlaws-last-stand/)**
 
 ## ✨ Features
 
@@ -51,7 +51,7 @@ A high-octane western-themed survivor-like game built with React and Vite. Fight
 
 ```bash
 # Clone the repository
-git clone https://github.com/USERNAME/outlaws-last-stand.git
+git clone https://github.com/SodaPopinzki/outlaws-last-stand.git
 cd outlaws-last-stand
 
 # Install dependencies

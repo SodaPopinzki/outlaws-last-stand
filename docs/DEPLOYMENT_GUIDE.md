@@ -40,11 +40,9 @@ git branch
 
 **2. Add your GitHub remote:**
 
-Replace `USERNAME` with your actual GitHub username:
-
 ```bash
 git remote remove origin
-git remote add origin https://github.com/USERNAME/outlaws-last-stand.git
+git remote add origin https://github.com/SodaPopinzki/outlaws-last-stand.git
 ```
 
 **3. Verify remote:**
@@ -64,7 +62,7 @@ You may be prompted for GitHub credentials. Use a **Personal Access Token** inst
 - Use token as password when prompted
 
 **5. Verify on GitHub:**
-- Visit `https://github.com/USERNAME/outlaws-last-stand`
+- Visit `https://github.com/SodaPopinzki/outlaws-last-stand`
 - You should see all your files
 
 ---
@@ -169,7 +167,7 @@ git push origin main
 
 **6. Visit your game:**
 ```
-https://USERNAME.github.io/outlaws-last-stand/
+https://SodaPopinzki.github.io/outlaws-last-stand/
 ```
 
 ### Method 2: Manual Build (Alternative)
@@ -308,7 +306,7 @@ Visit your deployed site and test:
 ```markdown
 # Outlaw's Last Stand
 
-🎮 **[Play Now](https://USERNAME.github.io/outlaws-last-stand/)**
+🎮 **[Play Now](https://SodaPopinzki.github.io/outlaws-last-stand/)**
 
 A western-themed survivor-like game built with React!
 ```
@@ -430,7 +428,7 @@ Your game is now live and playable by anyone with the link!
 **Share your game:**
 ```
 🎮 Outlaw's Last Stand is now live!
-Play at: https://USERNAME.github.io/outlaws-last-stand/
+Play at: https://SodaPopinzki.github.io/outlaws-last-stand/
 
 A western-themed survivor-like game with:
 - 8 unique characters
