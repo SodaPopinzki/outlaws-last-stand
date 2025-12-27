@@ -27,8 +27,8 @@ export const STAT_UPGRADES = {
     stackable: true,
     maxStacks: 10,
     apply: (player) => {
-      player.maxHp += 20;
-      player.hp = Math.min(player.hp + 20, player.maxHp); // Heal when upgrading
+      player.maxHealth += 20;
+      player.health = Math.min(player.health + 20, player.maxHealth); // Heal when upgrading
     },
   },
 

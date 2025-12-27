@@ -10,17 +10,17 @@ export function HUD() {
   const { state } = useGame();
   const [damageFlash, setDamageFlash] = useState(false);
   const [announcement, setAnnouncement] = useState(null);
-  const prevHpRef = useRef(state.player.hp);
+  const prevHealthRef = useRef(state.player.health);
   const prevWaveRef = useRef(state.wave);
 
   // Damage flash effect
   useEffect(() => {
-    if (state.player.hp < prevHpRef.current) {
+    if (state.player.health < prevHealthRef.current) {
       setDamageFlash(true);
       setTimeout(() => setDamageFlash(false), 200);
     }
-    prevHpRef.current = state.player.hp;
-  }, [state.player.hp]);
+    prevHealthRef.current = state.player.health;
+  }, [state.player.health]);
 
   // Wave announcement
   useEffect(() => {
@@ -36,7 +36,7 @@ export function HUD() {
   }, [state.wave]);
 
   // Calculate percentages
-  const hpPercent = (state.player.hp / state.player.maxHp) * 100;
+  const healthPercent = (state.player.health / state.player.maxHealth) * 100;
   const xpNeeded = Math.floor(100 * Math.pow(1.5, state.player.level - 1));
   const xpPercent = (state.player.xp / xpNeeded) * 100;
 
@@ -95,8 +95,8 @@ export function HUD() {
             <div
               className="absolute inset-y-0 left-0 bg-gradient-to-r from-red-700 to-red-500 transition-all duration-300 ease-out"
               style={{
-                width: `${Math.max(0, hpPercent)}%`,
-                boxShadow: hpPercent < 30 ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none'
+                width: `${Math.max(0, healthPercent)}%`,
+                boxShadow: healthPercent < 30 ? '0 0 10px rgba(239, 68, 68, 0.5)' : 'none'
               }}
             />
             {/* Shine effect */}
@@ -105,11 +105,11 @@ export function HUD() {
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-white font-bold text-sm drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
                     style={{ fontFamily: '"Rye", serif' }}>
-                {Math.max(0, Math.floor(state.player.hp))} / {state.player.maxHp}
+                {Math.max(0, Math.floor(state.player.health))} / {state.player.maxHealth}
               </span>
             </div>
             {/* Pulse effect when low HP */}
-            {hpPercent < 30 && (
+            {healthPercent < 30 && (
               <div className="absolute inset-0 bg-red-500 opacity-20 animate-pulse" />
             )}
           </div>

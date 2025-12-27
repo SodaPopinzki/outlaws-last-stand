@@ -25,9 +25,13 @@ const createInitialState = () => ({
   player: {
     x: 400,
     y: 300,
-    hp: 100,
-    maxHp: 100,
+    health: 100,
+    maxHealth: 100,
+    size: 15,
+    color: '#4169E1',
     speed: 5,
+    score: 0,
+    aimAngle: 0,
     xp: 0,
     level: 1,
     character: DEFAULT_CHARACTER,
@@ -155,27 +159,27 @@ function gameReducer(state, action) {
     case ACTIONS.DAMAGE_PLAYER: {
       const damage = action.payload;
       const actualDamage = Math.max(0, damage - state.player.stats.armor);
-      const newHp = Math.max(0, state.player.hp - actualDamage);
+      const newHealth = Math.max(0, state.player.health - actualDamage);
 
       return {
         ...state,
         player: {
           ...state.player,
-          hp: newHp,
+          health: newHealth,
         },
-        gameStatus: newHp <= 0 ? GAME_STATUS.GAME_OVER : state.gameStatus,
+        gameStatus: newHealth <= 0 ? GAME_STATUS.GAME_OVER : state.gameStatus,
       };
     }
 
     case ACTIONS.HEAL_PLAYER: {
       const healAmount = action.payload;
-      const newHp = Math.min(state.player.maxHp, state.player.hp + healAmount);
+      const newHealth = Math.min(state.player.maxHealth, state.player.health + healAmount);
 
       return {
         ...state,
         player: {
           ...state.player,
-          hp: newHp,
+          health: newHealth,
         },
       };
     }

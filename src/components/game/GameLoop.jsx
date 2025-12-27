@@ -97,7 +97,7 @@ export function GameLoop({ canvasRef }) {
       // Health regeneration
       if (state.player.stats.regen > 0) {
         const healAmount = state.player.stats.regen * dt;
-        if (state.player.hp < state.player.maxHp) {
+        if (state.player.health < state.player.maxHealth) {
           healPlayer(healAmount);
         }
       }

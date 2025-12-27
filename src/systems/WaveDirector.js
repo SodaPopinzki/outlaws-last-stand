@@ -601,8 +601,8 @@ export class WaveDirector {
    */
   adjustDifficulty(player) {
     // Track player HP
-    const hpPercent = (player.hp / player.maxHp) * 100;
-    this.playerHpHistory.push(hpPercent);
+    const healthPercent = (player.health / player.maxHealth) * 100;
+    this.playerHpHistory.push(healthPercent);
 
     // Keep last 5 waves
     if (this.playerHpHistory.length > 5) {
