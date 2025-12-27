@@ -1,7 +1,7 @@
 import { GameProvider, useGame, GAME_STATUS } from './context/GameContext';
 import { GameCanvas } from './components/game/GameCanvas';
 import { MainMenu } from './components/ui/MainMenu';
-import { GameOver } from './components/ui/GameOver';
+import { GameOverScreen } from './components/ui/GameOverScreen';
 import { HUD } from './components/ui/HUD';
 import { CharacterSelect } from './components/ui/CharacterSelect';
 import LevelUpScreen from './components/ui/LevelUpScreen';
@@ -40,7 +40,7 @@ function GameContent() {
         </div>
       )}
 
-      {state.gameStatus === GAME_STATUS.GAME_OVER && <GameOver />}
+      {state.gameStatus === GAME_STATUS.GAME_OVER && <GameOverScreen />}
     </div>
   );
 }
