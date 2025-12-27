@@ -1,10 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGame, GAME_STATUS } from '../../context/GameContext';
 import { useSimpleGameLoop } from '../../hooks/useGameLoop';
 import { useInput } from '../../hooks/useInput';
 import { renderPlayer, updatePlayer, damagePlayer } from '../entities/Player';
 import { renderEnemy, updateEnemy, damageEnemy, isEnemyDead } from '../entities/Enemy';
 import { renderProjectile, updateProjectile, isProjectileExpired } from '../entities/Projectile';
+import {
+  renderParticle,
+  updateParticle,
+  isParticleExpired,
+  createBloodSplatter,
+  createDustCloud,
+  createMuzzleFlash,
+  createExplosion,
+  createDamageNumber,
+  createXpGem,
+} from '../entities/Particle';
 import { WeaponSystem } from '../../systems/weapons';
 import { spawnWave } from '../../systems/spawning';
 import { getEnemyCountForWave } from '../../data/enemies';
@@ -23,6 +34,7 @@ export function GameCanvas() {
   const weaponSystemRef = useRef(new WeaponSystem());
   const { state, updatePlayer: setPlayer, updateEnemies, updateProjectiles, gameOver } = useGame();
   const input = useInput();
+  const [particles, setParticles] = useState([]);
 
   // Initialize game on mount
   useEffect(() => {
@@ -71,6 +83,13 @@ export function GameCanvas() {
 
       if (newProjectiles.length > 0) {
         updateProjectiles([...state.projectiles, ...newProjectiles]);
+
+        // Create muzzle flash at gun position
+        const muzzleFlash = createMuzzleFlash(
+          state.player.x + Math.cos(aimAngle) * 15,
+          state.player.y + Math.sin(aimAngle) * 15
+        );
+        setParticles(prev => [...prev, muzzleFlash]);
       }
     }
 
@@ -91,14 +110,22 @@ export function GameCanvas() {
     // Apply projectile damage to enemies
     let enemiesAfterDamage = [...updatedEnemies];
     const projectilesToRemove = new Set();
+    const newParticles = [];
 
     projectileHits.forEach((hit) => {
       const enemyIndex = enemiesAfterDamage.findIndex((e) => e.id === hit.enemyId);
       if (enemyIndex !== -1) {
-        enemiesAfterDamage[enemyIndex] = damageEnemy(
-          enemiesAfterDamage[enemyIndex],
-          hit.damage
-        );
+        const enemy = enemiesAfterDamage[enemyIndex];
+        enemiesAfterDamage[enemyIndex] = damageEnemy(enemy, hit.damage);
+
+        // Create blood splatter and dust particles
+        newParticles.push(...createBloodSplatter(enemy.x, enemy.y, 5));
+        newParticles.push(...createDustCloud(enemy.x, enemy.y, 3));
+
+        // Create damage number
+        const isCritical = Math.random() < 0.15; // 15% crit chance
+        const damageNumber = createDamageNumber(enemy.x, enemy.y - 10, hit.damage, isCritical);
+        newParticles.push(damageNumber);
 
         // Remove projectile if not piercing
         if (!hit.piercing) {
@@ -107,16 +134,37 @@ export function GameCanvas() {
       }
     });
 
+    if (newParticles.length > 0) {
+      setParticles(prev => [...prev, ...newParticles]);
+    }
+
     // Remove dead enemies and projectiles that hit
     const aliveEnemies = enemiesAfterDamage.filter((e) => !isEnemyDead(e));
     const activeProjectiles = updatedProjectiles.filter(
       (p) => !projectilesToRemove.has(p.id)
     );
 
-    // Update score for killed enemies
-    const killedCount = enemiesAfterDamage.length - aliveEnemies.length;
-    if (killedCount > 0) {
-      setPlayer({ score: state.player.score + killedCount * 10 });
+    // Handle killed enemies
+    const killedEnemies = enemiesAfterDamage.filter((e) => isEnemyDead(e));
+    if (killedEnemies.length > 0) {
+      const deathParticles = [];
+
+      killedEnemies.forEach(enemy => {
+        // Create explosion effect
+        deathParticles.push(...createExplosion(enemy.x, enemy.y, 8));
+        deathParticles.push(...createBloodSplatter(enemy.x, enemy.y, 12));
+
+        // Create XP gems
+        const xpGem = createXpGem(enemy.x, enemy.y, 5);
+        deathParticles.push(xpGem);
+      });
+
+      if (deathParticles.length > 0) {
+        setParticles(prev => [...prev, ...deathParticles]);
+      }
+
+      // Update score
+      setPlayer({ score: state.player.score + killedEnemies.length * 10 });
     }
 
     // Apply player damage (only if not invulnerable)
@@ -149,6 +197,12 @@ export function GameCanvas() {
       gameOver();
     }
 
+    // Update particles
+    const updatedParticles = particles
+      .map(p => updateParticle(p, deltaTime))
+      .filter(p => !isParticleExpired(p));
+    setParticles(updatedParticles);
+
     // Update state
     updateEnemies(aliveEnemies);
     updateProjectiles(activeProjectiles);
@@ -171,15 +225,36 @@ export function GameCanvas() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
-    ctx.fillStyle = '#1a1a2e';
+    // Clear canvas with desert sand background
+    const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    gradient.addColorStop(0, '#c4a35a'); // Desert sand
+    gradient.addColorStop(0.5, '#b8985a'); // Slightly darker
+    gradient.addColorStop(1, '#c4a35a');
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Add subtle darker patches for variation
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    for (let i = 0; i < 8; i++) {
+      const x = (i * 173 + 50) % CANVAS_WIDTH;
+      const y = (i * 137 + 30) % CANVAS_HEIGHT;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 80, 60, i * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Render game entities
     if (state.gameStatus === GAME_STATUS.PLAYING) {
       // Render projectiles
       state.projectiles.forEach((projectile) => {
         renderProjectile(ctx, projectile);
+      });
+
+      // Render particles (behind entities)
+      particles.forEach((particle) => {
+        if (particle.type !== 'damageNumber') {
+          renderParticle(ctx, particle);
+        }
       });
 
       // Render enemies
@@ -189,8 +264,15 @@ export function GameCanvas() {
 
       // Render player
       renderPlayer(ctx, state.player);
+
+      // Render damage numbers (on top)
+      particles.forEach((particle) => {
+        if (particle.type === 'damageNumber') {
+          renderParticle(ctx, particle);
+        }
+      });
     }
-  }, [state]);
+  }, [state, particles]);
 
   // Start game loop
   useSimpleGameLoop(update, state.gameStatus === GAME_STATUS.PLAYING);
