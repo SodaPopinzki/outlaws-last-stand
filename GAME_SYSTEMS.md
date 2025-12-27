@@ -1206,13 +1206,14 @@ src/
 The foundation is complete! Ready to integrate:
 - Enemy behaviors implementation (lunge, ranged, charge, phase, spawn)
 - Boss spawning integration with WaveDirector
-- Level-up UI screen (4 upgrade cards with rarity styling)
-- Meta progression UI (upgrade shop, achievement tracker, stats)
+- ✅ **Level-up UI screen** - Integrated into App.jsx, shows when gameStatus is LEVEL_UP
+- ✅ **Weapon upgrade system** - ADD_WEAPON, UPGRADE_WEAPON, EVOLVE_WEAPON actions implemented
+- ✅ **Stat upgrade application** - APPLY_STAT_UPGRADE action implemented in game state
+- Meta progression UI (upgrade shop, achievement tracker, stats) - UI created, needs integration into Menu
 - Boss dialogue and phase transition UI
 - Boss telegraph rendering (ground markers, warning lines, screen flash)
 - Wave announcement UI display
 - Weapon visual effects integration (WeaponRenderer in GameCanvas)
-- Stat upgrade application in game state
 - Gold nugget drops from enemies
 - Achievement unlock notifications
 - Sound effects and music
