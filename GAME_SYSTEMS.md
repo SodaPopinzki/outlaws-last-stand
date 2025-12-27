@@ -1617,14 +1617,217 @@ useEffect(() => {
 
 ---
 
-## 🔊 Audio System (`src/hooks/useAudio.js`)
+## 🔊 Audio System (`src/systems/AudioSystem.js`)
 
-**Features**:
-- Sound effect loading and caching
-- Music playback with looping
-- Volume control (0-1)
-- Mute toggle
-- Overlapping sound support (cloning)
+Web Audio API-based sound system with procedurally generated sounds using oscillators.
+
+**AudioSystem Class**:
+```javascript
+const audioSystem = createAudioSystem();
+
+// Play sound effects
+audioSystem.playSFX('SHOOT_PISTOL', volume=1.0, pitch=1.0);
+audioSystem.playSFX('EXPLOSION');
+
+// Spatial audio (volume based on distance)
+audioSystem.playSpatial('ENEMY_DEATH', enemyX, enemyY, playerX, playerY, maxDistance=800);
+
+// Music control
+audioSystem.playMusic('GAME');
+audioSystem.stopMusic();
+audioSystem.setMusicVolume(0.5);
+
+// Volume controls
+audioSystem.setMasterVolume(0.7);
+audioSystem.setMuted(true/false);
+audioSystem.toggleMute();
+```
+
+**Sound Categories & Priorities**:
+- **BOSS** (priority: 100) - Always plays, max 10 concurrent
+- **PLAYER** (priority: 80) - Always plays, max 10 concurrent
+- **UI** (priority: 60) - Max 5 concurrent
+- **ENEMY** (priority: 40) - Max 5 concurrent (limited to prevent spam)
+- **MUSIC** (priority: 20) - Background music
+
+**13 Synthesized Sound Effects**:
+
+1. **SHOOT_PISTOL**
+   - Sharp square wave, 150Hz → 50Hz
+   - Duration: 0.1s
+   - Category: PLAYER
+
+2. **SHOOT_SHOTGUN**
+   - Deep sawtooth wave, 100Hz → 30Hz
+   - Duration: 0.2s (longer than pistol)
+   - Category: PLAYER
+
+3. **SHOOT_GATLING**
+   - Rapid square wave, 200Hz → 80Hz
+   - Duration: 0.05s (very short)
+   - Category: PLAYER
+
+4. **EXPLOSION**
+   - Low sawtooth boom, 80Hz → 20Hz
+   - Duration: 0.6s with decay
+   - Category: PLAYER
+
+5. **ENEMY_HIT**
+   - Triangle wave thwack, 400Hz → 200Hz
+   - Duration: 0.08s
+   - Category: ENEMY
+
+6. **ENEMY_DEATH**
+   - Descending sawtooth, 300Hz → 50Hz
+   - Duration: 0.3s
+   - Category: ENEMY
+
+7. **PLAYER_HIT**
+   - Impact square wave, 150Hz → 80Hz
+   - Duration: 0.15s
+   - Category: PLAYER
+
+8. **XP_COLLECT**
+   - Rising sine chime, 400Hz → 800Hz
+   - Duration: 0.2s
+   - Category: PLAYER
+
+9. **LEVEL_UP**
+   - Triumphant chord (C5, E5, G5)
+   - Staggered notes (0.05s apart)
+   - Duration: 0.5s
+   - Category: PLAYER
+
+10. **BOSS_INTRO**
+    - Dramatic sawtooth sting
+    - 100Hz → 50Hz → 100Hz oscillation
+    - Duration: 1.0s
+    - Category: BOSS
+
+11. **BOSS_DEATH**
+    - Epic explosion sequence
+    - 3 overlapping explosions + triumphant rise
+    - Rising sine 400Hz → 800Hz at end
+    - Duration: 2.0s
+    - Category: BOSS
+
+12. **MENU_SELECT**
+    - Quick square wave click, 600Hz
+    - Duration: 0.05s
+    - Category: UI
+
+13. **MENU_CONFIRM**
+    - Heavier click, 800Hz → 600Hz
+    - Duration: 0.1s
+    - Category: UI
+
+**3 Background Music Tracks**:
+
+1. **MENU**
+   - Melody: C, E, G, E (peaceful)
+   - Tempo: 0.6s per note
+   - Loops continuously
+
+2. **GAME**
+   - Melody: G, A, B, C, B, A (energetic)
+   - Tempo: 0.4s per note
+   - Faster paced for action
+
+3. **BOSS**
+   - Melody: A, B, C, D (intense)
+   - Tempo: 0.3s per note
+   - Fastest for boss fights
+
+**Sound Generation**:
+```javascript
+// Oscillator types used:
+- Square: Sharp, percussive sounds (guns, impacts)
+- Sawtooth: Rich, full sounds (explosions, deaths)
+- Triangle: Softer sounds (enemy hits)
+- Sine: Pure tones (music, chimes)
+
+// Envelope control:
+gainNode.gain.setValueAtTime(attack, now);
+gainNode.gain.exponentialRampToValueAtTime(sustain, now + duration);
+gainNode.gain.linearRampToValueAtTime(release, now + duration);
+
+// Frequency modulation:
+oscillator.frequency.setValueAtTime(startFreq * pitch, now);
+oscillator.frequency.exponentialRampToValueAtTime(endFreq * pitch, now + duration);
+```
+
+**Spatial Audio**:
+```javascript
+// Volume calculated by distance (inverse square law)
+const distance = Math.sqrt(dx*dx + dy*dy);
+const distanceRatio = distance / maxDistance;
+const volume = 1 - distanceRatio;
+
+// Sounds beyond maxDistance (800px default) are not played
+```
+
+**Concurrent Sound Limiting**:
+- Tracks active sounds per category
+- Removes finished sounds from tracking
+- Prevents new sounds when at limit
+- Enemy sounds limited to 5 to prevent spam
+- Player/Boss sounds have higher limits (10)
+
+**Volume Controls**:
+- Master volume (affects all categories)
+- Per-category volume (PLAYER, ENEMY, BOSS, UI, MUSIC)
+- Mute toggle (preserves previous volume)
+- All volumes range 0.0 to 1.0
+
+**Auto-Resume**:
+```javascript
+// Audio contexts may be suspended until user interaction
+// System automatically resumes on first click or keypress
+document.addEventListener('click', resumeAudio);
+document.addEventListener('keydown', resumeAudio);
+```
+
+**Integration Points**:
+- **Weapon firing**: Use weapon type to select sound
+  - `getWeaponSound(weaponType)` helper
+- **Enemy damage**: `playSpatial('ENEMY_HIT', x, y, playerX, playerY)`
+- **Enemy death**: `playSpatial('ENEMY_DEATH', x, y, playerX, playerY)`
+- **Player damage**: `playSFX('PLAYER_HIT')`
+- **XP collection**: `playSFX('XP_COLLECT')`
+- **Level up**: `playSFX('LEVEL_UP')`
+- **Boss spawn**: `playSFX('BOSS_INTRO')` + `playMusic('BOSS')`
+- **Boss death**: `playSFX('BOSS_DEATH')`
+- **Menu interactions**: `playSFX('MENU_SELECT')`, `playSFX('MENU_CONFIRM')`
+
+**Performance**:
+- Lightweight oscillator synthesis (no file loading)
+- Automatic cleanup of finished sounds
+- Concurrent sound limiting prevents audio overload
+- Category-based prioritization
+- Web Audio API runs on separate thread
+
+**Usage Example**:
+```javascript
+// Initialize
+const audio = createAudioSystem();
+
+// In game loop when shooting
+audio.playSFX(getWeaponSound('pistol'), 1.0, 1.0);
+
+// When enemy is hit (spatial)
+audio.playSpatial('ENEMY_HIT', enemy.x, enemy.y, player.x, player.y);
+
+// Background music
+audio.playMusic('GAME');
+
+// Settings
+audio.setMasterVolume(0.7);
+audio.setMusicVolume(0.5);
+audio.toggleMute();
+
+// Cleanup
+audio.destroy();
+```
 
 ---
 
@@ -1677,6 +1880,7 @@ src/
 │   ├── MetaProgression.js          # Persistent progression and achievements
 │   ├── ParticleSystem.js           # Particle effects with object pooling
 │   ├── ScreenEffects.js            # Screen shake, flash, vignette, slow-mo, color grading
+│   ├── AudioSystem.js              # Web Audio API sound system with synthesized sounds
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -1688,8 +1892,7 @@ src/
 │   └── bosses.js                   # 10 legendary bosses
 ├── hooks/
 │   ├── useGameLoop.js              # Game loop hook
-│   ├── useInput.js                 # Input handling
-│   └── useAudio.js                 # Audio manager
+│   └── useInput.js                 # Input handling
 ├── utils/
 │   ├── math.js                     # Math utilities
 │   └── random.js                   # Random generators
@@ -1750,7 +1953,7 @@ src/
 ✅ Health/invulnerability system
 ✅ Progress tracking and persistence
 ✅ Input handling (keyboard + mouse)
-✅ Audio system foundation
+✅ **Audio system** - Web Audio API with 13 synthesized SFX, 3 music tracks, spatial audio
 
 ---
 
