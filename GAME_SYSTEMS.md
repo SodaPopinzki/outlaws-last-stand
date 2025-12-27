@@ -1831,6 +1831,272 @@ audio.destroy();
 
 ---
 
+## 🎵 Music System (`src/systems/MusicSystem.js`)
+
+Dynamic music system that responds to gameplay with layered western-themed music.
+
+**MusicSystem Class**:
+```javascript
+const musicSystem = new MusicSystem(audioContext, masterGain);
+
+// Update music state based on gameplay
+musicSystem.transitionTo(MUSIC_STATES.BOSS_FIGHT);
+
+// Update in game loop
+musicSystem.update(dt);
+
+// Volume controls
+musicSystem.setVolume(0.7);
+musicSystem.stop();
+```
+
+**7 Music States**:
+
+1. **MENU** - Main menu music
+   - Calm arpeggiated chords
+   - I-IV-V-I progression
+   - Gentle, welcoming
+
+2. **GAMEPLAY_CALM** - Normal gameplay
+   - Light melodic pattern
+   - Pentatonic scale (A minor)
+   - Rhythmic accompaniment
+
+3. **GAMEPLAY_ACTION** - High enemy count (>5 enemies)
+   - Adds driving rhythm layer
+   - Simulated kick drum pattern
+   - Increased intensity
+
+4. **BOSS_FIGHT** - Active boss present
+   - Power chords with tremolo
+   - Fast-paced rhythm
+   - Intense, dramatic
+
+5. **LOW_HP** - Player HP < 30%
+   - Heartbeat pattern (lub-dub)
+   - 100 BPM double beat
+   - Tension building
+
+6. **GAME_OVER** - Player defeated
+   - Descending notes
+   - Somber, final
+   - Slow fade
+
+7. **VICTORY** - Wave 50 complete
+   - Ascending arpeggio
+   - Triumphant sustained chord
+   - Celebratory
+
+**4 Music Layers** (can be mixed):
+
+```javascript
+MUSIC_LAYERS = {
+  BASE: 'BASE',       // Always playing, sets mood
+  ACTION: 'ACTION',   // Fades in during combat
+  BOSS: 'BOSS',      // Replaces base during boss fights
+  TENSION: 'TENSION', // Low HP warning (heartbeat)
+}
+```
+
+**MusicLayer Class**:
+- Individual layer with Web Audio nodes
+- Fade in/out capabilities (0.5-2.0s transitions)
+- Note playback with scheduling
+- Volume control per layer
+- Stop/cleanup functionality
+
+**Musical Elements**:
+
+**Pentatonic Scale** (A minor):
+```javascript
+const PENTATONIC_SCALE = {
+  A: [220.00, 261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33],
+  NOTES: {
+    I: 220.00,    // A (root)
+    bIII: 261.63, // C (minor third)
+    IV: 293.66,   // D (fourth)
+    V: 329.63,    // E (fifth)
+    bVII: 392.00, // G (minor seventh)
+  }
+}
+```
+
+**Western Chord Progressions**:
+1. **CLASSIC**: I-IV-V-I (traditional western)
+2. **MOODY**: I-bVII-IV-I (darker feel)
+3. **DRAMATIC**: I-bIII-IV-V (tension building)
+
+**State-Specific Implementations**:
+
+**MENU State**:
+- 4-bar loop, 120 BPM
+- Arpeggiated chords (I, IV, V, I)
+- BASE layer only
+- Sine waves for smooth tone
+
+**GAMEPLAY_CALM State**:
+- 4-bar loop, 120 BPM
+- Melodic pattern with pentatonic scale
+- BASE layer: melody
+- Light accompaniment
+
+**GAMEPLAY_ACTION State**:
+- Keeps BASE layer from CALM
+- Adds ACTION layer: driving rhythm
+- Simulated kick drum (low sine wave)
+- Increases energy without replacing melody
+
+**BOSS_FIGHT State**:
+- 4-bar loop, 140 BPM (faster)
+- BOSS layer replaces BASE
+- Power chords (root + fifth)
+- Fast tremolo rhythm (sawtooth wave)
+- Heavy, intense sound
+
+**LOW_HP State**:
+- TENSION layer added to current music
+- Heartbeat pattern: lub-dub
+- 100 BPM (600ms per beat)
+- Double beat: main (60Hz) + echo (50Hz)
+- Staggered timing (0ms, 210ms)
+- Continues until HP recovered
+
+**GAME_OVER State**:
+- BASE layer only
+- Descending chromatic notes
+- Root → bVII → bVI → V → IV
+- Slow tempo, somber
+- Fades to silence
+
+**VICTORY State**:
+- BASE layer only
+- Ascending arpeggio
+- Root → III → V → Octave
+- Final sustained chord (major)
+- Celebratory, triumphant
+
+**Cross-Fade Transitions**:
+```javascript
+transitionTo(newState, fadeTime = 1.5) {
+  // Fade out old state layers
+  this.fadeOutState(prevState, fadeTime);
+
+  // Fade in new state layers
+  this.fadeInState(newState, fadeTime);
+
+  // Smooth transitions prevent jarring changes
+  // Different fade times for different transitions:
+  // - Normal transitions: 1.5s
+  // - Boss fight: 2.0s (dramatic entrance)
+  // - Death: 1.0s (quicker)
+}
+```
+
+**Layer Mixing**:
+- Multiple layers can play simultaneously
+- Each layer has independent volume
+- Layers fade in/out independently
+- Example: ACTION layer fades in over BASE layer
+
+**Automatic State Detection**:
+```javascript
+// Helper function to determine state from game
+getMusicStateFromGame(gameState) {
+  const hasActiveBoss = gameState.enemies?.some(e => e.isBoss);
+  const isLowHP = gameState.player?.hp < (gameState.player?.maxHp * 0.3);
+  const enemyCount = gameState.enemies?.length || 0;
+
+  if (hasActiveBoss) return MUSIC_STATES.BOSS_FIGHT;
+  if (isLowHP && enemyCount > 0) return MUSIC_STATES.LOW_HP;
+  if (enemyCount > 5) return MUSIC_STATES.GAMEPLAY_ACTION;
+  if (gameState.gameStatus === 'playing') return MUSIC_STATES.GAMEPLAY_CALM;
+  return MUSIC_STATES.MENU;
+}
+```
+
+**Technical Implementation**:
+
+**Oscillator Types Used**:
+- **Sine**: Melodic lines, smooth tones, bass notes
+- **Sawtooth**: Power chords, rich harmonics
+- **Square**: Percussive elements, tremolo effects
+- **Triangle**: Softer accompaniment
+
+**Note Scheduling**:
+```javascript
+playNote(frequency, startTime, duration, waveType, volume) {
+  const oscillator = this.audioContext.createOscillator();
+  const gainNode = this.audioContext.createGain();
+
+  oscillator.type = waveType;
+  oscillator.frequency.value = frequency;
+
+  // ADSR envelope
+  gainNode.gain.setValueAtTime(0, startTime);
+  gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.05);  // Attack
+  gainNode.gain.setValueAtTime(volume, startTime + duration - 0.1); // Sustain
+  gainNode.gain.linearRampToValueAtTime(0, startTime + duration);   // Release
+
+  oscillator.start(startTime);
+  oscillator.stop(startTime + duration);
+}
+```
+
+**Performance Features**:
+- Scheduled playback (no real-time processing)
+- Efficient note cleanup
+- Minimal CPU usage
+- Single AudioContext shared with AudioSystem
+- No audio file loading required
+
+**Integration Points**:
+- Game start: Transition to MENU
+- Gameplay start: Transition to GAMEPLAY_CALM
+- Enemy count > 5: Transition to GAMEPLAY_ACTION
+- Boss spawn: Transition to BOSS_FIGHT (with AudioSystem BOSS_INTRO sound)
+- Boss death: Transition back to GAMEPLAY_ACTION or CALM
+- Player HP < 30%: Add TENSION layer
+- Player HP recovered: Remove TENSION layer
+- Player death: Transition to GAME_OVER
+- Victory (Wave 50): Transition to VICTORY
+
+**Usage Example**:
+```javascript
+// Initialize (share AudioContext with AudioSystem)
+const audioContext = audioSystem.audioContext;
+const masterGain = audioSystem.masterVolume;
+const musicSystem = new MusicSystem(audioContext, masterGain);
+
+// In game loop
+musicSystem.update(dt);
+
+// State changes
+useEffect(() => {
+  const newState = getMusicStateFromGame(gameState);
+  if (newState !== currentMusicState) {
+    musicSystem.transitionTo(newState);
+    setCurrentMusicState(newState);
+  }
+}, [gameState.enemies, gameState.player.hp, gameState.gameStatus]);
+
+// Volume control
+musicSystem.setVolume(settings.musicVolume);
+
+// Cleanup
+musicSystem.stop();
+```
+
+**Balancing Features**:
+- Smooth transitions prevent jarring changes
+- Layered approach allows gradual intensity increase
+- Heartbeat at low HP creates tension without blocking music
+- Boss music replaces normal music for focus
+- Pentatonic scale creates authentic western feel
+- Tempo changes reflect gameplay intensity
+- Cross-fades respect player's immersion
+
+---
+
 ## 📐 Utility Systems
 
 ### Math Utilities (`src/utils/math.js`)
@@ -1881,6 +2147,7 @@ src/
 │   ├── ParticleSystem.js           # Particle effects with object pooling
 │   ├── ScreenEffects.js            # Screen shake, flash, vignette, slow-mo, color grading
 │   ├── AudioSystem.js              # Web Audio API sound system with synthesized sounds
+│   ├── MusicSystem.js              # Dynamic music with layered western-themed tracks
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -1954,6 +2221,7 @@ src/
 ✅ Progress tracking and persistence
 ✅ Input handling (keyboard + mouse)
 ✅ **Audio system** - Web Audio API with 13 synthesized SFX, 3 music tracks, spatial audio
+✅ **Music system** - Dynamic layered music, 7 states, western pentatonic scale, smooth transitions
 
 ---
 
