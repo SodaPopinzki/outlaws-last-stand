@@ -41,10 +41,10 @@ export function GameCanvas() {
     if (state.gameStatus === GAME_STATUS.PLAYING && state.enemies.length === 0) {
       // Spawn initial wave
       const enemyCount = getEnemyCountForWave(state.wave);
-      const enemies = spawnWave(state.wave, enemyCount, CANVAS_WIDTH, CANVAS_HEIGHT);
+      const enemies = spawnWave(state.wave, enemyCount, CANVAS_WIDTH, CANVAS_HEIGHT, state.player.x, state.player.y);
       updateEnemies(enemies);
     }
-  }, [state.gameStatus, state.enemies.length, state.wave, updateEnemies]);
+  }, [state.gameStatus, state.enemies.length, state.wave, state.player.x, state.player.y, updateEnemies]);
 
   // Game update loop
   const update = (deltaTime) => {
@@ -53,8 +53,28 @@ export function GameCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Update weapon system
-    weaponSystemRef.current.update(deltaTime);
+    // Update weapon system (auto-fire)
+    const autoFireProjectiles = weaponSystemRef.current.update(
+      deltaTime,
+      state.player.x,
+      state.player.y,
+      state.enemies
+    );
+
+    if (autoFireProjectiles.length > 0) {
+      updateProjectiles([...state.projectiles, ...autoFireProjectiles]);
+
+      // Create muzzle flash for auto-fire
+      const nearestEnemy = state.enemies[0]; // Approximate for flash position
+      if (nearestEnemy) {
+        const aimAngle = angle(state.player.x, state.player.y, nearestEnemy.x, nearestEnemy.y);
+        const muzzleFlash = createMuzzleFlash(
+          state.player.x + Math.cos(aimAngle) * 15,
+          state.player.y + Math.sin(aimAngle) * 15
+        );
+        setParticles(prev => [...prev, muzzleFlash]);
+      }
+    }
 
     // Handle player movement
     const movement = input.getMovementVector();
@@ -211,7 +231,7 @@ export function GameCanvas() {
     if (aliveEnemies.length === 0 && state.gameStatus === GAME_STATUS.PLAYING) {
       const nextWave = state.wave + 1;
       const enemyCount = getEnemyCountForWave(nextWave);
-      const newEnemies = spawnWave(nextWave, enemyCount, CANVAS_WIDTH, CANVAS_HEIGHT);
+      const newEnemies = spawnWave(nextWave, enemyCount, CANVAS_WIDTH, CANVAS_HEIGHT, state.player.x, state.player.y);
       updateEnemies(newEnemies);
       setPlayer({ level: nextWave });
     }

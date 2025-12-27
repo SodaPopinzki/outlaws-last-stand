@@ -5,9 +5,25 @@ import { selectRandomEnemy, createEnemyInstance } from '../data/enemies';
 /**
  * Create a new enemy entity
  */
-export function spawnEnemy(wave, canvasWidth, canvasHeight) {
+export function spawnEnemy(wave, canvasWidth, canvasHeight, playerX = 400, playerY = 300) {
   const enemyType = selectRandomEnemy(wave);
-  const position = randomEdgePosition(canvasWidth, canvasHeight);
+
+  // Keep trying until we find a position far from player
+  let position;
+  let attempts = 0;
+  const minDistanceFromPlayer = 400; // Never spawn within 400px of player
+
+  do {
+    position = randomEdgePosition(canvasWidth, canvasHeight);
+    const dx = position.x - playerX;
+    const dy = position.y - playerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance >= minDistanceFromPlayer) {
+      break;
+    }
+    attempts++;
+  } while (attempts < 10);
 
   return createEnemyInstance(enemyType, wave, position.x, position.y);
 }
@@ -15,10 +31,10 @@ export function spawnEnemy(wave, canvasWidth, canvasHeight) {
 /**
  * Spawn a wave of enemies
  */
-export function spawnWave(wave, count, canvasWidth, canvasHeight) {
+export function spawnWave(wave, count, canvasWidth, canvasHeight, playerX = 400, playerY = 300) {
   const enemies = [];
   for (let i = 0; i < count; i++) {
-    enemies.push(spawnEnemy(wave, canvasWidth, canvasHeight));
+    enemies.push(spawnEnemy(wave, canvasWidth, canvasHeight, playerX, playerY));
   }
   return enemies;
 }
