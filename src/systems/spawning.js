@@ -1,25 +1,15 @@
 import { generateId } from '../utils/random';
 import { randomEdgePosition } from '../utils/random';
-import { getEnemyForWave } from '../data/enemies';
+import { selectRandomEnemy, createEnemyInstance } from '../data/enemies';
 
 /**
  * Create a new enemy entity
  */
 export function spawnEnemy(wave, canvasWidth, canvasHeight) {
-  const enemyType = getEnemyForWave(wave);
+  const enemyType = selectRandomEnemy(wave);
   const position = randomEdgePosition(canvasWidth, canvasHeight);
 
-  return {
-    id: generateId(),
-    ...enemyType,
-    x: position.x,
-    y: position.y,
-    vx: 0,
-    vy: 0,
-    targetX: canvasWidth / 2,
-    targetY: canvasHeight / 2,
-    lastFireTime: 0,
-  };
+  return createEnemyInstance(enemyType, wave, position.x, position.y);
 }
 
 /**
