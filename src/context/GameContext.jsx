@@ -59,6 +59,7 @@ const createInitialState = () => ({
   wave: 1,
   gameTime: 0,
   kills: 0,
+  gold: 0,
 
   camera: {
     x: 0,
@@ -119,6 +120,7 @@ export const ACTIONS = {
   // Game tracking
   UPDATE_GAME_TIME: 'UPDATE_GAME_TIME',
   INCREMENT_KILLS: 'INCREMENT_KILLS',
+  ADD_GOLD: 'ADD_GOLD',
 
   // Camera
   UPDATE_CAMERA: 'UPDATE_CAMERA',
@@ -375,6 +377,12 @@ function gameReducer(state, action) {
         kills: state.kills + (action.payload || 1),
       };
 
+    case ACTIONS.ADD_GOLD:
+      return {
+        ...state,
+        gold: state.gold + (action.payload || 1),
+      };
+
     // ========== Camera ==========
     case ACTIONS.UPDATE_CAMERA:
       return {
@@ -518,6 +526,10 @@ export function GameProvider({ children }) {
     dispatch({ type: ACTIONS.INCREMENT_KILLS, payload: count });
   }, []);
 
+  const addGold = useCallback((amount = 1) => {
+    dispatch({ type: ACTIONS.ADD_GOLD, payload: amount });
+  }, []);
+
   // ========== Camera ==========
   const updateCamera = useCallback((cameraUpdate) => {
     dispatch({ type: ACTIONS.UPDATE_CAMERA, payload: cameraUpdate });
@@ -574,6 +586,7 @@ export function GameProvider({ children }) {
     // Game tracking
     updateGameTime,
     incrementKills,
+    addGold,
 
     // Camera
     updateCamera,
