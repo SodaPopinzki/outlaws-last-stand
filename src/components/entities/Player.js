@@ -6,6 +6,12 @@
 export function renderPlayer(ctx, player) {
   ctx.save();
 
+  // Flash when invulnerable
+  if (player.invulnerable) {
+    const flash = Math.floor(Date.now() / 100) % 2 === 0;
+    ctx.globalAlpha = flash ? 0.5 : 1.0;
+  }
+
   // Draw player circle
   ctx.fillStyle = player.color || '#4169E1';
   ctx.beginPath();
@@ -13,7 +19,7 @@ export function renderPlayer(ctx, player) {
   ctx.fill();
 
   // Draw player outline
-  ctx.strokeStyle = '#FFFFFF';
+  ctx.strokeStyle = player.invulnerable ? '#FFD700' : '#FFFFFF';
   ctx.lineWidth = 2;
   ctx.stroke();
 

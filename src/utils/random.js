@@ -36,7 +36,7 @@ export function chance(probability) {
 /**
  * Generate random position on canvas edge
  */
-export function randomEdgePosition(width, height, padding = 50) {
+export function randomEdgePosition(width, height, padding = 200) {
   const edge = Math.floor(Math.random() * 4);
   switch (edge) {
     case 0: // Top

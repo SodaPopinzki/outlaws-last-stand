@@ -50,8 +50,8 @@ const createInitialState = () => ({
       armor: 0,
       regen: 0,
     },
-    invulnerable: false,
-    invulnerableTime: 0,
+    invulnerable: true,
+    invulnerableTime: 2.0,
     passiveManager: null, // Initialized when character is selected
   },
 

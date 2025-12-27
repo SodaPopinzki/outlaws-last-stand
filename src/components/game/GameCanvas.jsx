@@ -119,14 +119,29 @@ export function GameCanvas() {
       setPlayer({ score: state.player.score + killedCount * 10 });
     }
 
-    // Apply player damage
+    // Apply player damage (only if not invulnerable)
     let damagedPlayer = state.player;
-    playerHits.forEach((hit) => {
-      damagedPlayer = damagePlayer(damagedPlayer, hit.damage);
-    });
+    if (!state.player.invulnerable && playerHits.length > 0) {
+      // Apply damage from first hit only (to prevent multi-hit in same frame)
+      damagedPlayer = damagePlayer(damagedPlayer, playerHits[0].damage);
 
-    if (damagedPlayer.health !== state.player.health) {
-      setPlayer({ health: damagedPlayer.health });
+      if (damagedPlayer.health !== state.player.health) {
+        setPlayer({
+          health: damagedPlayer.health,
+          invulnerable: true,
+          invulnerableTime: 0.5 // 0.5 second iframes after hit
+        });
+      }
+    }
+
+    // Update invulnerability timer
+    if (state.player.invulnerable && state.player.invulnerableTime > 0) {
+      const newInvulnerableTime = state.player.invulnerableTime - deltaTime;
+      if (newInvulnerableTime <= 0) {
+        setPlayer({ invulnerable: false, invulnerableTime: 0 });
+      } else {
+        setPlayer({ invulnerableTime: newInvulnerableTime });
+      }
     }
 
     // Check game over
