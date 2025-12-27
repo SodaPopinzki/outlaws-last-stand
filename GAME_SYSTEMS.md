@@ -1446,6 +1446,158 @@ Manages character passive abilities and their effects on gameplay:
 
 ---
 
+## 🎨 UI Components
+
+### Game HUD (`src/components/ui/HUD.jsx`)
+
+Western-themed in-game heads-up display with comprehensive player information.
+
+**TOP LEFT - Player Stats**:
+```javascript
+- Character Portrait
+  - Circular frame with rope border decoration
+  - Character icon display
+  - Character name and level
+
+- Health Bar
+  - Heart icon (❤️)
+  - Red gradient fill (dark to light)
+  - Current HP / Max HP display
+  - Damage flash effect (200ms red overlay)
+  - Pulse effect when HP < 30%
+  - Low HP warning (red vignette)
+
+- XP Bar
+  - Star icon (⭐)
+  - Gold gradient fill
+  - Current XP / Required XP
+  - Sparkle effect when > 80% full
+  - Smooth fill transition (500ms)
+```
+
+**TOP RIGHT - Game Stats**:
+```javascript
+- Wave Number
+  - Large display (text-4xl)
+  - Amber gradient with glow
+  - "WAVE" label above number
+
+- Kill Count
+  - Skull icon (💀)
+  - Running total of kills
+
+- Timer
+  - Clock icon (⏱️)
+  - MM:SS format
+  - Real-time game time tracking
+
+- Gold Count
+  - Coin icon (💰)
+  - Running total of gold nuggets collected
+```
+
+**BOTTOM CENTER - Weapon Slots**:
+```javascript
+- Up to 6 weapon slots displayed
+- Each slot shows:
+  - Weapon icon (emoji or sprite)
+  - Level badge (top-right corner)
+  - Cooldown overlay (dark fill from bottom)
+  - Active indicator (amber glow + scale 1.1x)
+
+- Active weapon:
+  - Amber border glow
+  - Pulsing outline
+  - Scaled up (110%)
+
+- Empty slots:
+  - Dashed border
+  - Question mark (?)
+```
+
+**TOP CENTER - Boss Health** (conditional):
+```javascript
+// Only shown when boss is active
+- Boss name with devil icon (👹)
+- Phase indicator
+- Large health bar:
+  - Red gradient (dark to light)
+  - Animated shimmer effect
+  - Current HP / Max HP display
+  - Percentage display
+  - 300ms transition on damage
+```
+
+**CENTER - Announcements**:
+```javascript
+// 3-second display with animations
+- Wave announcements:
+  - "WAVE X" text
+  - "Prepare yourself!" subtext
+  - Amber gradient background
+
+- Boss introductions:
+  - Boss name
+  - Red gradient background
+
+- Achievement unlocks:
+  - Achievement text
+  - Green gradient background
+
+- Features:
+  - Animated entrance (scale + fade)
+  - Animated exit (scale + fade)
+  - 6 floating dust particles
+  - Rope decorations (top + bottom)
+  - Wooden texture background
+```
+
+**Visual Design**:
+- **Backgrounds**: Wooden/parchment texture with diagonal stripes
+- **Borders**: Rope/leather borders (2-4px amber)
+- **Font**: Rye serif for western aesthetic
+- **Shadows**: Multiple layers for depth
+- **Gradients**: Amber, red, gold based on context
+- **Animations**:
+  - Damage flash (200ms red overlay)
+  - Smooth transitions (300-500ms)
+  - Pulse effects (2s infinite)
+  - Shimmer effects (2s infinite)
+  - Float animations for particles
+
+**Reactive Features**:
+```javascript
+// Damage flash when player takes damage
+useEffect(() => {
+  if (hp < prevHp) {
+    setDamageFlash(true);
+    setTimeout(() => setDamageFlash(false), 200);
+  }
+}, [state.player.hp]);
+
+// Wave announcement on wave change
+useEffect(() => {
+  if (wave > prevWave) {
+    showAnnouncement({ type: 'wave', text: `WAVE ${wave}` });
+  }
+}, [state.wave]);
+```
+
+**Component Structure**:
+- `HUD()` - Main component
+- `WeaponSlot({ weapon, isActive })` - Individual weapon slot
+- `AnnouncementBanner({ type, text, subtext })` - Center announcements
+
+**Integration**:
+- Uses `useGame()` hook for state access
+- Automatically updates on state changes
+- Calculates XP requirements: `100 * (1.5 ^ (level - 1))`
+- Formats time as MM:SS
+- Shows active boss from enemies array
+- Responsive to all game events
+
+---
+
 ## 🎯 Input System (`src/hooks/useInput.js`)
 
 **Keyboard**:
@@ -1587,6 +1739,7 @@ src/
 ✅ **Weapon renderer system** - Complete visual effects for all weapon types
 ✅ **Particle system** - 15 preset effects, object pooling, LOD optimization
 ✅ **Screen effects system** - Shake, flash, vignette, slow-mo, 6 color grades, 12 presets
+✅ **Game HUD** - Western-themed UI with player stats, boss health, weapon slots, announcements
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
 ✅ 60 FPS game loop with delta time
