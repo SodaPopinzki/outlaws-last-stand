@@ -930,7 +930,208 @@ metaProgression.importData(data);           // Restore from JSON
 
 ---
 
-### 12. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
+### 12. **Particle System** (`src/systems/ParticleSystem.js`)
+
+Robust particle effects for all game visuals with performance optimizations.
+
+**Particle Class**:
+```javascript
+class Particle {
+  x, y          // Position
+  vx, vy        // Velocity
+  life, maxLife // Lifetime in seconds
+  size, sizeDecay
+  color, alpha
+  gravity       // Gravity force
+  friction      // Velocity dampening (0-1)
+  shape         // 'circle', 'square', 'star', 'line'
+  rotation, rotationSpeed
+}
+```
+
+**ParticleEmitter Class**:
+```javascript
+const emitter = particleSystem.createEmitter(x, y);
+
+// Single burst
+emitter.emit({
+  count: 20,
+  spread: 30,
+  velocitySpread: 100,
+  life: 1.0,
+  color: '#FFD700',
+  shape: 'star'
+});
+
+// Continuous stream
+emitter.stream({
+  rate: 10,      // Particles per second
+  color: '#FF0000',
+  shape: 'circle'
+}, 2.0);         // Duration in seconds
+```
+
+**ParticleSystem Class**:
+- Object pooling for particle reuse
+- Max particle limit: 1000
+- LOD (Level of Detail): Reduces particles when > 500 active
+- Automatic particle lifecycle management
+
+**Preset Effects** (14 presets):
+
+1. **DUST_CLOUD** - Brown/tan particles, slow fall
+   - Count: 15, spread: 20, gravity: 30
+   - Colors: Brown, tan, beige
+   - Use: Environmental effects, landing
+
+2. **MUZZLE_FLASH** - Yellow/orange, fast fade
+   - Count: 8, life: 0.2s, shape: star
+   - Colors: Orange, gold, yellow
+   - Use: Gun firing effects
+
+3. **BLOOD_SPLATTER** - Red particles, gravity affected
+   - Count: 20, gravity: 300
+   - Colors: Dark red, crimson, maroon
+   - Use: Enemy damage
+
+4. **EXPLOSION** - Orange/yellow expanding ring
+   - Count: 40, velocitySpread: 300
+   - Colors: Red-orange to yellow gradient
+   - Use: Large explosions, boss attacks
+
+5. **FIRE** - Orange/red rising particles
+   - Count: 12, gravity: -50 (rises)
+   - Colors: Red, orange, gold
+   - Use: Fire effects, burning
+
+6. **POISON** - Green bubbling particles
+   - Count: 10, gravity: -20 (rises slowly)
+   - Colors: Lime, green, yellow-green
+   - Use: Poison DOT effects
+
+7. **XP_COLLECT** - Golden sparkles
+   - Count: 8, shape: star, life: 0.4s
+   - Colors: Gold, orange, yellow
+   - Use: XP gem pickup
+
+8. **LEVEL_UP** - Golden shower from top
+   - Count: 50, spread: 100, life: 1.5s
+   - Colors: Gold, yellow, beige
+   - Use: Player level up celebration
+
+9. **BOSS_DEATH** - Massive explosion
+   - Count: 100, velocitySpread: 400
+   - Colors: Red to yellow gradient
+   - Use: Boss defeated
+
+10. **FOOTSTEP_DUST** - Small puff
+    - Count: 5, size: 2, life: 0.4s
+    - Colors: Brown, tan
+    - Use: Player movement
+
+11. **SMOKE_TRAIL** - Rising gray smoke
+    - Count: 5, gravity: -30
+    - Colors: Gray shades
+    - Use: Projectile trails
+
+12. **HEALING** - Green sparkles rising
+    - Count: 15, gravity: -40, shape: star
+    - Colors: Green, lime, light green
+    - Use: Health pickup, regen
+
+13. **COIN_PICKUP** - Golden squares
+    - Count: 10, shape: square
+    - Colors: Gold, orange, dark gold
+    - Use: Gold nugget pickup
+
+14. **IMPACT** - White lines radiating
+    - Count: 20, shape: line
+    - Colors: White, light gray
+    - Use: Bullet impacts
+
+15. **CRITICAL_HIT** - Red/gold stars
+    - Count: 25, shape: star
+    - Colors: Red, orange, gold
+    - Use: Critical damage
+
+**Helper Functions**:
+```javascript
+// Directional burst (e.g., from weapon)
+emitDirectionalBurst(particleSystem, x, y, angle, {
+  count: 10,
+  speed: 100,
+  angleSpread: 0.5,
+  color: '#FFD700'
+});
+
+// Ring pattern
+emitRing(particleSystem, x, y, radius, {
+  count: 20,
+  speed: 100,
+  color: '#FF0000'
+});
+
+// Line of particles
+emitLine(particleSystem, x1, y1, x2, y2, {
+  count: 10,
+  color: '#0000FF'
+});
+```
+
+**Usage Example**:
+```javascript
+// Create system
+const particleSystem = createParticleSystem(1000);
+
+// Update in game loop
+particleSystem.update(dt);
+
+// Render
+particleSystem.render(ctx);
+
+// Emit preset effect
+particleSystem.emitPreset('EXPLOSION', enemyX, enemyY);
+
+// Custom burst
+const emitter = particleSystem.createEmitter(playerX, playerY);
+emitter.emit({
+  count: 20,
+  spread: 30,
+  velocitySpread: 100,
+  life: 1.0,
+  size: 5,
+  color: ['#FFD700', '#FFA500'],
+  shape: 'star',
+  gravity: 200
+});
+```
+
+**Performance Optimizations**:
+- **Object Pooling**: Reuses particle objects instead of creating new ones
+- **Max Limit**: Hard cap at 1000 particles
+- **LOD**: When > 500 particles, starts randomly skipping new particles
+  - At 750 particles: ~25% skip rate
+  - At 1000 particles: ~50% skip rate
+- **Efficient Update**: Single loop for all particles
+- **Early Exit**: Dead particles immediately returned to pool
+
+**Integration Points**:
+- Weapon firing: MUZZLE_FLASH, directional burst
+- Enemy damage: BLOOD_SPLATTER, IMPACT
+- Enemy death: EXPLOSION (normal), BOSS_DEATH (bosses)
+- Player movement: FOOTSTEP_DUST (when moving)
+- XP pickup: XP_COLLECT toward player
+- Level up: LEVEL_UP shower
+- Gold pickup: COIN_PICKUP
+- Healing: HEALING rising particles
+- Critical hits: CRITICAL_HIT
+- Poison effects: POISON bubbling
+- Fire effects: FIRE rising
+- Explosions: EXPLOSION, ring patterns
+
+---
+
+### 13. **Game Loop Orchestration** (`src/components/game/GameLoop.jsx`)
 
 Ties all systems together:
 
@@ -983,7 +1184,7 @@ Ties all systems together:
 
 ---
 
-### 13. **Passive Ability System** (`src/systems/PassiveSystem.js`)
+### 14. **Passive Ability System** (`src/systems/PassiveSystem.js`)
 
 Manages character passive abilities and their effects on gameplay:
 
@@ -1126,6 +1327,7 @@ src/
 │   ├── WaveDirector.js             # Wave spawning and pacing
 │   ├── LevelUpSystem.js            # Upgrade generation and stat bonuses
 │   ├── MetaProgression.js          # Persistent progression and achievements
+│   ├── ParticleSystem.js           # Particle effects with object pooling
 │   ├── collision.js                # Collision detection
 │   ├── spawning.js                 # Enemy/projectile spawning
 │   ├── weapons.js                  # Weapon manager
@@ -1186,6 +1388,7 @@ src/
 ✅ **Level Up system** - 4 upgrade types, 12 stat bonuses, priority-based selection
 ✅ **Meta Progression system** - Persistent upgrades, 2 currencies, 50+ achievements
 ✅ **Weapon renderer system** - Complete visual effects for all weapon types
+✅ **Particle system** - 15 preset effects, object pooling, LOD optimization
 ✅ Western-themed character selection screen
 ✅ Comprehensive state management
 ✅ 60 FPS game loop with delta time
@@ -1193,7 +1396,6 @@ src/
 ✅ Projectile physics and visual effects
 ✅ Collision detection
 ✅ XP gem collection with magnetism
-✅ Particle effects system
 ✅ Health/invulnerability system
 ✅ Progress tracking and persistence
 ✅ Input handling (keyboard + mouse)
