@@ -4,6 +4,7 @@ import { Menu } from './components/ui/Menu';
 import { GameOver } from './components/ui/GameOver';
 import { HUD } from './components/ui/HUD';
 import { CharacterSelect } from './components/ui/CharacterSelect';
+import LevelUpScreen from './components/ui/LevelUpScreen';
 
 function GameContent() {
   const { state } = useGame();
@@ -18,6 +19,14 @@ function GameContent() {
         <div className="relative">
           <HUD />
           <GameCanvas />
+        </div>
+      )}
+
+      {state.gameStatus === GAME_STATUS.LEVEL_UP && (
+        <div className="relative">
+          <HUD />
+          <GameCanvas />
+          <LevelUpScreen />
         </div>
       )}
 

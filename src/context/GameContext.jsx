@@ -87,6 +87,12 @@ export const ACTIONS = {
   ADD_XP: 'ADD_XP',
   LEVEL_UP: 'LEVEL_UP',
 
+  // Weapon actions
+  ADD_WEAPON: 'ADD_WEAPON',
+  UPGRADE_WEAPON: 'UPGRADE_WEAPON',
+  EVOLVE_WEAPON: 'EVOLVE_WEAPON',
+  APPLY_STAT_UPGRADE: 'APPLY_STAT_UPGRADE',
+
   // Enemy actions
   ADD_ENEMY: 'ADD_ENEMY',
   REMOVE_ENEMY: 'REMOVE_ENEMY',
@@ -209,6 +215,69 @@ function gameReducer(state, action) {
           ...action.payload,
         },
       };
+
+    // ========== Weapon Actions ==========
+    case ACTIONS.ADD_WEAPON: {
+      const { weaponId } = action.payload;
+      const weapon = require('../data/weapons').WEAPONS.find(w => w.id === weaponId);
+
+      if (!weapon) return state;
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          weapons: [...state.player.weapons, { ...weapon, level: 1 }],
+        },
+      };
+    }
+
+    case ACTIONS.UPGRADE_WEAPON: {
+      const { weaponId } = action.payload;
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          weapons: state.player.weapons.map(w =>
+            w.id === weaponId
+              ? { ...w, level: (w.level || 1) + 1 }
+              : w
+          ),
+        },
+      };
+    }
+
+    case ACTIONS.EVOLVE_WEAPON: {
+      const { evolutionId } = action.payload;
+      const { getEvolutionById } = require('../systems/WeaponEvolution');
+      const evolution = getEvolutionById(evolutionId);
+
+      if (!evolution) return state;
+
+      // Remove base weapons and add evolved weapon
+      const baseIds = evolution.baseWeapons.map(w => w.id);
+      const filteredWeapons = state.player.weapons.filter(w => !baseIds.includes(w.id));
+
+      return {
+        ...state,
+        player: {
+          ...state.player,
+          weapons: [...filteredWeapons, { ...evolution.evolved, level: 1 }],
+        },
+      };
+    }
+
+    case ACTIONS.APPLY_STAT_UPGRADE: {
+      // Stat upgrade already applied to player object by LevelUpSystem
+      // This action just triggers a re-render
+      return {
+        ...state,
+        player: {
+          ...state.player,
+        },
+      };
+    }
 
     // ========== Enemy Actions ==========
     case ACTIONS.ADD_ENEMY:

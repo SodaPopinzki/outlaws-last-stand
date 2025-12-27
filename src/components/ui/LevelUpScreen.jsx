@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { getRarityColor, getRarityBorderStyle } from '../../systems/LevelUpSystem';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useGame, GAME_STATUS, ACTIONS } from '../../context/GameContext';
+import { LevelUpSystem, getRarityColor, getRarityBorderStyle } from '../../systems/LevelUpSystem';
 
 /**
  * LevelUpScreen - Western-themed upgrade selection overlay
@@ -7,14 +8,18 @@ import { getRarityColor, getRarityBorderStyle } from '../../systems/LevelUpSyste
  * Displays 4 upgrade options when player levels up
  * Pauses game and shows animated cards with western styling
  */
-export default function LevelUpScreen({
-  upgradeOptions = [],
-  onSelectUpgrade,
-  playerLevel = 1
-}) {
+export default function LevelUpScreen() {
+  const { state, dispatch } = useGame();
   const [hoveredCard, setHoveredCard] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
   const [showParticles, setShowParticles] = useState(false);
+
+  // Create LevelUpSystem instance and generate upgrade options
+  const levelUpSystem = useMemo(() => new LevelUpSystem(), []);
+  const upgradeOptions = useMemo(
+    () => levelUpSystem.generateUpgradeOptions(state.player, state.wave),
+    [state.player, state.wave, levelUpSystem]
+  );
 
   useEffect(() => {
     // Show entry animation
@@ -26,9 +31,13 @@ export default function LevelUpScreen({
   const handleCardClick = (upgrade, index) => {
     setSelectedCard(index);
 
-    // Play selection animation then callback
+    // Play selection animation then apply upgrade
     setTimeout(() => {
-      onSelectUpgrade(upgrade);
+      // Apply the upgrade using the LevelUpSystem
+      levelUpSystem.applyUpgrade(state.player, upgrade, dispatch);
+
+      // Return to playing
+      dispatch({ type: ACTIONS.SET_GAME_STATUS, payload: GAME_STATUS.PLAYING });
       setSelectedCard(null);
     }, 300);
   };
@@ -86,7 +95,7 @@ export default function LevelUpScreen({
             ⭐ LEVEL UP! ⭐
           </h1>
           <p className="text-xl text-amber-200" style={{ fontFamily: '"Rye", serif' }}>
-            Level {playerLevel} - Choose Your Power
+            Level {state.player.level} - Choose Your Power
           </p>
         </div>
 
