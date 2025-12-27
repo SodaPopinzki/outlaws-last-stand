@@ -1209,7 +1209,7 @@ The foundation is complete! Ready to integrate:
 - ✅ **Level-up UI screen** - Integrated into App.jsx, shows when gameStatus is LEVEL_UP
 - ✅ **Weapon upgrade system** - ADD_WEAPON, UPGRADE_WEAPON, EVOLVE_WEAPON actions implemented
 - ✅ **Stat upgrade application** - APPLY_STAT_UPGRADE action implemented in game state
-- Meta progression UI (upgrade shop, achievement tracker, stats) - UI created, needs integration into Menu
+- ✅ **Meta progression UI** - Integrated into Menu with UPGRADES button, persists via localStorage
 - Boss dialogue and phase transition UI
 - Boss telegraph rendering (ground markers, warning lines, screen flash)
 - Wave announcement UI display
